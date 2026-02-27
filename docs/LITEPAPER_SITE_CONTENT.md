@@ -20,7 +20,7 @@ Pump or Rug Arena turns chaos into a game:
 
 ## 4) How rounds work (simple)
 - Hourly rounds: pump.fun + bags.fm
-- 10-minute prediction window
+- 45-minute prediction window
 - 6-hour settlement
 - Transparent rules, no manual interference
 

@@ -19,7 +19,7 @@ const fadeUp = {
 const timelineSteps = [
   { label: "Token Selected", sub: "(hidden)", color: "var(--muted)" },
   { label: "Round Opens", sub: "(revealed)", color: "var(--accent)" },
-  { label: "10m Prediction", sub: "Window", color: "var(--pump)" },
+  { label: "45m Prediction", sub: "Window", color: "var(--pump)" },
   { label: "Picks Lock", sub: "", color: "var(--warn)" },
   { label: "6h Settlement", sub: "", color: "var(--rug)" },
   { label: "Result", sub: "", color: "var(--pump)" },
@@ -30,7 +30,7 @@ const faqs = [
     icon: <Eye size={28} weight="duotone" className="text-accent" />,
     question: "When do you predict?",
     answer:
-      "Token is revealed when the round opens. You see it, research it, then make your PUMP or RUG call within 10 minutes. Your pick stays hidden from everyone else until the window closes.",
+      "Token is revealed when the round opens. You see it, research it, then make your PUMP or RUG call within 45 minutes. Your pick stays hidden from everyone else until the window closes.",
     accent: "accent",
   },
   {

@@ -10,7 +10,7 @@ Most launchpad activity is chaos. People want signal, fun, and competition.
 - Every hour, 4 token slots go live:
   - 2 from **pump.fun**
   - 2 from **bags.fm**
-- Users have 10 minutes to predict each token: `PUMP` or `RUG`
+- Users have 45 minutes to predict each token: `PUMP` or `RUG`
 - Stake per pick: **0.01–3 SOL**
 - Round settles after 6 hours
 - Leaderboards + streaks drive daily habit

@@ -6,7 +6,7 @@ _Supersedes V2. Adds variable staking, payout multiplier, streaks, leaderboard, 
 - Every hour: 4 token slots open
   - 2 selected from pump.fun
   - 2 selected from bags.fm
-- Prediction window: first 10 minutes
+- Prediction window: first 45 minutes
 - Settlement time: +6 hours from round open
 
 ## What users choose
