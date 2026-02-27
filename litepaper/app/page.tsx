@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import { TickerTape } from "@/components/GlitchText";
 import HowItWorks from "@/components/HowItWorks";
+import GameExplainer from "@/components/GameExplainer";
 import ProductShot from "@/components/ProductShot";
 import ZoneDivider from "@/components/ZoneDivider";
 import Settlement from "@/components/Settlement";
@@ -9,6 +10,7 @@ import Scoring from "@/components/Scoring";
 import AntiManip from "@/components/AntiManip";
 import WhyItSticks from "@/components/WhyItSticks";
 import Roadmap from "@/components/Roadmap";
+import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -20,6 +22,7 @@ export default function Home() {
       <Hero />
       <TickerTape />
       <HowItWorks />
+      <GameExplainer />
       <ProductShot />
 
       {/* === TRANSITION === */}
@@ -34,6 +37,8 @@ export default function Home() {
       <WhyItSticks />
       <div className="divider-gradient max-w-content mx-auto" />
       <Roadmap />
+      <div className="divider-gradient max-w-content mx-auto" />
+      <FAQ />
       <Footer />
     </main>
   );

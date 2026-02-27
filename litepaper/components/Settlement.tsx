@@ -22,7 +22,7 @@ const rules = [
       "Missing TWAP data points",
       "Source mismatch > 8%",
     ],
-    result: "Round skipped — bad data",
+    result: "Round skipped, bad data",
   },
   {
     label: "RUG",
@@ -34,7 +34,7 @@ const rules = [
       "Liquidity drains 70%+ (L1 ≤ 0.30 × L0)",
       "Sell-blocked behavior detected",
     ],
-    result: "RUG confirmed — rug callers eat",
+    result: "RUG confirmed, rug callers eat",
   },
   {
     label: "PUMP",
@@ -45,7 +45,7 @@ const rules = [
       "Price rises 100%+ (P1 ≥ 2.00 × P0)",
       "Liquidity stays healthy (L1 ≥ 0.60 × L0)",
     ],
-    result: "PUMP confirmed — pump callers win",
+    result: "PUMP confirmed, pump callers win",
   },
   {
     label: "NO SCORE",
@@ -53,7 +53,7 @@ const rules = [
     color: "text-muted",
     stripe: "rule-stripe-muted",
     conditions: ["Doesn't meet RUG or PUMP thresholds"],
-    result: "Too ambiguous — nobody scores",
+    result: "Too ambiguous, nobody scores",
   },
 ];
 
