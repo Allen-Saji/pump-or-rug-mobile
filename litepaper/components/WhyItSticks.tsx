@@ -8,6 +8,7 @@ import {
   Fire,
   Lightning,
   BellRinging,
+  CalendarCheck,
 } from "@phosphor-icons/react";
 
 const fadeUp = {
@@ -26,12 +27,17 @@ const features = [
   {
     icon: <Fire size={24} weight="duotone" className="text-rug" />,
     title: "Win Streaks",
-    desc: "Consecutive correct calls build streaks. Break it and start over.",
+    desc: "Consecutive correct picks build up to 2.5x point multiplier. One miss resets it.",
   },
   {
     icon: <ListNumbers size={24} weight="duotone" className="text-pump" />,
     title: "Public Rankings",
-    desc: "Open leaderboard. Everyone sees who's sharp and who fell off.",
+    desc: "Season leaderboard. Top players split the prize pool. Points-based — you can't buy your way up.",
+  },
+  {
+    icon: <CalendarCheck size={24} weight="duotone" className="text-pump" />,
+    title: "Daily Streaks",
+    desc: "Play every day for bonus points and badges. 30 days = Degen of the Month.",
   },
   {
     icon: <ShareNetwork size={24} weight="duotone" className="text-warn" />,
