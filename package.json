@@ -1,0 +1,15 @@
+{
+  "name": "pump-or-rug-mobile-contract-tests",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@types/bn.js": "^5.2.0",
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^10.0.10",
+    "chai": "^4.5.0",
+    "mocha": "^10.8.2",
+    "ts-mocha": "^10.1.0",
+    "typescript": "^5.9.2"
+  }
+}

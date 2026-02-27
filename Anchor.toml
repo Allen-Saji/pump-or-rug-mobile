@@ -16,4 +16,4 @@ cluster = "Localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "echo \"No TS test runner configured yet; use anchor test for Rust + localnet flow\""
+test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
