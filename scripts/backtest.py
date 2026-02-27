@@ -5,7 +5,7 @@ Backtest Pump or Rug settlement logic against pump.fun API data.
 Strategy: Pull tokens via multiple sort orders to get a diverse sample
 across age ranges, then apply settlement classification.
 
-V2: Rebalanced thresholds (RUG<=0.50, PUMP>=2.00) and +10/-8 scoring.
+V3: Variable staking model, ±20% settlement thresholds, +10/-3 points.
 """
 
 import json
@@ -17,20 +17,31 @@ from datetime import datetime, timezone
 PUMPFUN_API = "https://frontend-api-v3.pump.fun"
 SOL_PRICE_USD = 140.0
 
-# Settlement thresholds (GAME_RULES V2)
+# Settlement thresholds (GAME_RULES V3)
 VOID_MIN_LIQ = 25_000
 VOID_MIN_VOL = 50_000
-RUG_PRICE_RATIO = 0.50       # P1 <= 0.50*P0 (50%+ down)
+RUG_PRICE_RATIO = 0.80       # P1 <= 0.80*P0 (20%+ down)
 RUG_LIQ_RATIO = 0.30         # L1 <= 0.30*L0 (70%+ drain)
-PUMP_PRICE_RATIO = 2.00      # P1 >= 2.00*P0 (100%+ up, 2x)
+PUMP_PRICE_RATIO = 1.20      # P1 >= 1.20*P0 (20%+ up)
 PUMP_LIQ_RATIO = 0.60        # L1 >= 0.60*L0
-PUMP_PRICE_RATIO_ATH = 0.70  # ATH proxy: retained 70%+ of ATH
 ELIGIBLE_MIN_LIQ = 25_000
 
-# Scoring (V2)
+# ATH proxy for snapshot-only backtest (no true P0/P1 candles available)
+# Treat current/ATH >= 0.80 as PUMP-like retained strength
+PUMP_PRICE_RATIO_ATH = 0.80
+
+# Scoring (V3)
 SCORE_CORRECT = 10
-SCORE_WRONG = -8
-SCORE_BONUS = 3
+SCORE_WRONG = -3
+SCORE_BONUS_3OF4 = 5
+SCORE_BONUS_PERFECT = 15
+
+# Staking / payout (V3)
+STAKE_MIN_SOL = 0.01
+STAKE_MAX_SOL = 3.0
+PAYOUT_MULTIPLIER = 1.8
+RAKE_ON_WINNINGS = 0.05
+EFFECTIVE_PAYOUT_MULTIPLIER = PAYOUT_MULTIPLIER - (PAYOUT_MULTIPLIER - 1.0) * RAKE_ON_WINNINGS
 
 
 def fetch_json(url, retries=2):
@@ -72,7 +83,7 @@ def sol_to_usd(lamports):
 
 
 def classify(t):
-    """Classify a token using pump.fun snapshot data (V2 thresholds)."""
+    """Classify a token using pump.fun snapshot data (V3 thresholds, proxy mode)."""
     mcap = t.get("usd_market_cap", 0) or 0
     ath = t.get("ath_market_cap", 0) or 0
     real_sol = t.get("real_sol_reserves", 0) or 0
@@ -120,15 +131,14 @@ def classify(t):
         else:
             return "NO_SCORE", f"ath_invalid, mcap=${mcap:,.0f}", info
 
-    # RUG: price collapsed to <50% of ATH (V2: was 30%)
+    # RUG proxy: current collapsed below 80% of ATH
     if ratio <= RUG_PRICE_RATIO:
         return "RUG", f"ratio={ratio:.2f}", info
 
-    # PUMP: graduated or retained >70% of ATH with healthy liq
-    # V2: ATH proxy for 2x threshold — graduated + high ratio
+    # PUMP proxy: retained >=80% of ATH with healthy liquidity
     if complete and ratio >= PUMP_PRICE_RATIO_ATH:
         return "PUMP", "graduated+healthy", info
-    if ratio >= 0.85 and liq_usd >= ELIGIBLE_MIN_LIQ:
+    if ratio >= PUMP_PRICE_RATIO_ATH and liq_usd >= ELIGIBLE_MIN_LIQ:
         return "PUMP", f"ratio={ratio:.2f}", info
 
     return "NO_SCORE", f"ratio={ratio:.2f}", info
@@ -143,11 +153,12 @@ def print_bar(label, count, total, width=40):
 
 def main():
     print("=" * 70)
-    print("PUMP OR RUG — Backtest via pump.fun API (V2 thresholds)")
+    print("PUMP OR RUG — Backtest via pump.fun API (V3 thresholds)")
     print(f"Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
     print(f"SOL price: ~${SOL_PRICE_USD:.0f}")
-    print(f"Thresholds: RUG<=0.50*P0, PUMP>=2.00*P0, LiqFloor=${VOID_MIN_LIQ:,}")
-    print(f"Scoring: +{SCORE_CORRECT}/{SCORE_WRONG}, bonus +{SCORE_BONUS}")
+    print(f"Thresholds: RUG<=0.80*P0, PUMP>=1.20*P0, LiqFloor=${VOID_MIN_LIQ:,}")
+    print(f"Scoring: +{SCORE_CORRECT}/{SCORE_WRONG}, round bonuses +{SCORE_BONUS_3OF4}/+{SCORE_BONUS_PERFECT}")
+    print(f"Staking: {STAKE_MIN_SOL:.2f}–{STAKE_MAX_SOL:.0f} SOL, payout {PAYOUT_MULTIPLIER:.1f}x, effective {EFFECTIVE_PAYOUT_MULTIPLIER:.2f}x")
     print("=" * 70)
 
     # Fetch diverse sample using multiple sort strategies
@@ -272,7 +283,7 @@ def main():
 
     breakeven = abs(SCORE_WRONG) / (SCORE_CORRECT + abs(SCORE_WRONG)) * 100
 
-    print(f"\n  Strategy simulation (V2: +{SCORE_CORRECT}/{SCORE_WRONG}):")
+    print(f"\n  Strategy simulation (V3 points: +{SCORE_CORRECT}/{SCORE_WRONG}):")
     print(f"    Always PUMP:  {always_pump:+d} pts  (avg {always_pump/scored:+.2f}/round)")
     print(f"    Always RUG:   {always_rug:+d} pts  (avg {always_rug/scored:+.2f}/round)")
     print(f"    Random 50/50: {(always_pump+always_rug)/2:+.0f} pts")
@@ -281,26 +292,34 @@ def main():
     print(f"    Always-PUMP profitable when PUMP > {breakeven:.1f}% of scored")
     print(f"    Always-RUG profitable when RUG > {breakeven:.1f}% of scored")
 
+    # Financial EV (flat-stake proxy)
+    p = pump_rate / 100
+    q = rug_rate / 100
+    effective_win = EFFECTIVE_PAYOUT_MULTIPLIER - 1.0
+    ev_always_pump = p * effective_win - q
+    ev_always_rug = q * effective_win - p
+    print(f"\n  Flat-stake EV per scored pick (after 5% rake on winnings):")
+    print(f"    Always PUMP: {ev_always_pump:+.4f} stake units")
+    print(f"    Always RUG:  {ev_always_rug:+.4f} stake units")
+
     if pump_rate > 60:
         print(f"\n  ⚠ PROBLEM: PUMP dominates at {pump_rate:.0f}%.")
         print(f"    Always-PUMP yields {always_pump/scored:+.2f} pts/round — too exploitable.")
-        print(f"    Consider raising PUMP threshold further.")
     elif pump_rate > 50:
         print(f"\n  ⚠ MILD: PUMP slightly favored ({pump_rate:.0f}%).")
-        print(f"    Within acceptable range for V2.")
+        print(f"    Acceptable if flat-stake EV is near zero and volatility stays high.")
     elif rug_rate > 60:
         print(f"\n  ⚠ PROBLEM: RUG dominates at {rug_rate:.0f}%.")
         print(f"    Always-RUG yields {always_rug/scored:+.2f} pts/round — too exploitable.")
-        print(f"    Consider tightening RUG threshold.")
     else:
         print(f"\n  ✓ Balanced! Neither strategy dominates (PUMP {pump_rate:.0f}%, RUG {rug_rate:.0f}%).")
 
     # Manipulation cost estimate
-    print(f"\n  Manipulation cost estimate (V2):")
+    print(f"\n  Manipulation cost estimate (V3):")
     print(f"    Pool depth: ${VOID_MIN_LIQ:,} minimum")
-    print(f"    To force PUMP (2x price): ~${VOID_MIN_LIQ * 0.4:,.0f}+ buy pressure sustained 15 min")
-    print(f"    Prediction fee: 0.001 SOL per pick")
-    print(f"    Verdict: uneconomical for a free game")
+    print(f"    To force ±20% over 15m TWAP window: ~${VOID_MIN_LIQ * 0.25:,.0f}+ sustained pressure")
+    print(f"    Max single-pick stake: {STAKE_MAX_SOL:.0f} SOL")
+    print(f"    Verdict: generally negative-ROI to manipulate repeatedly")
 
     # Hourly supply check
     eligible = sum(1 for t in settled if
@@ -311,11 +330,12 @@ def main():
     print(f"\n  Token supply (with ${ELIGIBLE_MIN_LIQ:,} liq floor):")
     print(f"    Pass liq filter: {eligible}/{stotal} ({eligible/stotal*100:.1f}%)")
     print(f"    Graduated:       {grad}/{stotal} ({grad/stotal*100:.1f}%)")
-    print(f"    Need 1/hour = 168/week minimum")
-    if eligible >= 168:
-        print(f"    ✓ Supply OK ({eligible} >> 168)")
-    elif eligible >= 100:
-        print(f"    ⚠ Tight — {eligible} eligible. May need to lower liq floor or add bags.gm")
+    need_week = 4 * 24 * 7  # 4 token slots/hour in V3
+    print(f"    Need 4/hour = {need_week}/week minimum (across both launchpads)")
+    if eligible >= need_week:
+        print(f"    ✓ Supply OK in this sample ({eligible} >= {need_week})")
+    elif eligible >= 300:
+        print(f"    ⚠ Tight for pump.fun-only ({eligible}). Combine with bags.fm and caching.")
     else:
         print(f"    ⚠ May have gaps — only {eligible} eligible in sample")
 
