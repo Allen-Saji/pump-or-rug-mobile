@@ -44,7 +44,7 @@ const faqs = [
     icon: <Shuffle size={28} weight="duotone" className="text-pump" />,
     question: "How are tokens picked?",
     answer:
-      "Pulled from pump.fun and bags.gm launchpads automatically. The engine selects them and they're not revealed until the round opens. No one can front-run or pre-position.",
+      "Pulled from pump.fun and bags.fm launchpads automatically. The engine selects them and they're not revealed until the round opens. No one can front-run or pre-position.",
     accent: "pump",
   },
 ];

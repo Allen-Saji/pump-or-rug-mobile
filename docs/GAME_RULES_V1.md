@@ -3,7 +3,7 @@
 _Supersedes V1. Changes driven by backtesting 1,290 pump.fun tokens._
 
 ## Round cadence
-- Every hour: 2 rounds open (pump.fun + bags.gm)
+- Every hour: 2 rounds open (pump.fun + bags.fm)
 - Prediction window: first 10 minutes
 - Settlement time: +6 hours from round open
 

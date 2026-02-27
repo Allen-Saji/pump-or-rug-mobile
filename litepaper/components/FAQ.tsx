@@ -25,7 +25,7 @@ const faqs = [
     a: "Time-Weighted Average Price. Instead of checking one price at one moment (easy to manipulate), TWAP averages the price over a window of time. We use it so a single whale trade can't decide the outcome.",
   },
   {
-    q: "What are pump.fun and bags.gm?",
+    q: "What are pump.fun and bags.fm?",
     a: "Token launchpads on Solana where anyone can create and launch a new token. We pull our round tokens from these platforms automatically.",
   },
   {

@@ -30,7 +30,7 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.2, ease }}
           className="font-mono text-xs sm:text-sm tracking-[0.2em] uppercase text-primary/60 mb-6"
         >
-          Every hour. Two tokens. One call.
+          Mobile prediction game for launchpad tokens.
         </motion.p>
 
         {/* Title — massive split-color */}
@@ -66,10 +66,11 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7, ease }}
-          className="mt-6 text-lg sm:text-xl text-muted max-w-xl mx-auto"
+          className="mt-6 text-lg sm:text-xl text-muted max-w-2xl mx-auto"
         >
-          The degen prediction arena. Two launchpad tokens every hour.
-          Call it or get rekt.
+          Pump or Rug Arena is a mobile game where you predict whether fresh
+          tokens from pump.fun and bags.fm will pump or rug. Two rounds every
+          hour. Fast calls. Transparent settlement.
         </motion.p>
 
         {/* CTA */}

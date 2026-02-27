@@ -15,7 +15,7 @@ const steps = [
     num: "01",
     icon: <Coin size={32} weight="duotone" className="text-accent" />,
     title: "Tokens Drop",
-    desc: "Every hour, two fresh tokens from pump.fun and bags.gm. You don't know which until the round opens.",
+    desc: "Every hour, two fresh tokens from pump.fun and bags.fm. You don't know which until the round opens.",
   },
   {
     num: "02",

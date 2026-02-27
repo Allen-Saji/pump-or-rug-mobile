@@ -67,7 +67,7 @@ Rules:
 ## Section-by-section UX notes
 ### Hero
 - Headline example: "Call Pumps. Dodge Rugs. Climb the Board."
-- Subheadline must mention pump.fun + bags.gm
+- Subheadline must mention pump.fun + bags.fm
 
 ### Problem
 - Use 3 bullets max

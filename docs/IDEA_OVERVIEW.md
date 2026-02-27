@@ -9,7 +9,7 @@ Most launchpad activity is chaos. People want signal, fun, and competition.
 ## Core loop
 - Every hour, 2 tokens go live:
   - 1 from **pump.fun**
-  - 1 from **bags.gm**
+  - 1 from **bags.fm**
 - Users have 10 minutes to predict: `PUMP` or `RUG`
 - Round settles after 6 hours
 - Leaderboards + streaks drive daily habit

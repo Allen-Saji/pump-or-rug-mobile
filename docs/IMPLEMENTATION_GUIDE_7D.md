@@ -12,7 +12,7 @@
 
 ## Day 3 — Data adapters
 - pump.fun adapter
-- bags.gm adapter
+- bags.fm adapter
 - token eligibility + ranking logic
 
 ## Day 4 — Settlement engine

@@ -4,7 +4,7 @@ _Supersedes V1. Raised floors + randomized selection to resist manipulation._
 
 Every hour, select:
 - 1 token from pump.fun
-- 1 token from bags.gm
+- 1 token from bags.fm
 
 ## Eligibility filters (must pass all)
 1. Token age: 15 minutes to 72 hours
