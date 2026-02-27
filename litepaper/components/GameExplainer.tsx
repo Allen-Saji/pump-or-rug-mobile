@@ -30,7 +30,7 @@ const faqs = [
     icon: <Eye size={28} weight="duotone" className="text-accent" />,
     question: "When do you predict?",
     answer:
-      "Token is revealed when the round opens. You see it, research it, then make your PUMP or RUG call within 45 minutes. Your pick stays hidden from everyone else until the window closes.",
+      "Token is revealed when the round opens. You see it, research it, then make your PUMP or RUG call within 60 minutes. Your pick stays hidden from everyone else until the window closes.",
     accent: "accent",
   },
   {

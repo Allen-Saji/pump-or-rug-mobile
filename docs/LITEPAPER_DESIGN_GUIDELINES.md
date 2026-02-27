@@ -48,7 +48,7 @@ Rules:
 3. Comparison bars
    - Pump vs Rug thresholds visualized
 4. Timeline strip
-   - Hourly round -> 45 min pick window -> +6h settle
+   - Hourly round -> 60 min pick window -> +6h settle
 5. Token selection matrix
    - Show filters + why each exists
 

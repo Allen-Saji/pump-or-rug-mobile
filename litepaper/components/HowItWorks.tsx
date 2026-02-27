@@ -21,7 +21,7 @@ const steps = [
     num: "02",
     icon: <Crosshair size={32} weight="duotone" className="text-pump" />,
     title: "Lock Your Call",
-    desc: "45 minutes to call PUMP or RUG on each token and choose your stake: 0.01 to 3 SOL per token. Your picks are hidden until the window closes. No herding.",
+    desc: "60 minutes to call PUMP or RUG on each token and choose your stake: 0.01 to 3 SOL per token. Your picks are hidden until the window closes. No herding.",
   },
   {
     num: "03",

@@ -14,7 +14,7 @@ const fadeUp = {
 const faqs = [
   {
     q: "What is Pump or Rug?",
-    a: "A prediction game. Every hour, four tokens appear — two from pump.fun, two from bags.fm. You have 45 minutes to call PUMP or RUG on each. After 6 hours the price is checked and you find out if you were right.",
+    a: "A prediction game. Every hour, four tokens appear — two from pump.fun, two from bags.fm. You have a full 60-minute window to call PUMP or RUG on each. After 6 hours the price is checked and you find out if you were right.",
   },
   {
     q: "What does PUMP mean? What about RUG?",
