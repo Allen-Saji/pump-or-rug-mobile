@@ -69,7 +69,7 @@ export default function Hero() {
           className="mt-6 text-lg sm:text-xl text-muted max-w-2xl mx-auto"
         >
           Pump or Rug Arena is a mobile game where you predict whether fresh
-          tokens from pump.fun and bags.fm will pump or rug. Two rounds every
+          tokens from pump.fun and bags.fm will pump or rug. Four tokens every
           hour. Fast calls. Transparent settlement.
         </motion.p>
 
@@ -96,8 +96,8 @@ export default function Hero() {
           className="mt-10 flex justify-center gap-3 sm:gap-4 flex-wrap"
         >
           {[
-            { value: "48", label: "rounds/day" },
-            { value: "0.001 SOL", label: "per pick" },
+            { value: "24", label: "rounds/day" },
+            { value: "0.01–3 SOL", label: "per pick" },
             { value: "6h", label: "settlement" },
           ].map((stat, i) => (
             <motion.div
