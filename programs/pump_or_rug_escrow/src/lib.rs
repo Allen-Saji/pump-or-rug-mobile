@@ -20,6 +20,31 @@ pub mod pump_or_rug_escrow {
         Ok(())
     }
 
+    pub fn set_resolver(ctx: Context<AdminOnly>, new_resolver: Pubkey) -> Result<()> {
+        let cfg = &mut ctx.accounts.global_config;
+        cfg.resolver = new_resolver;
+        Ok(())
+    }
+
+    pub fn set_treasury(ctx: Context<AdminOnly>, new_treasury: Pubkey) -> Result<()> {
+        let cfg = &mut ctx.accounts.global_config;
+        cfg.treasury = new_treasury;
+        Ok(())
+    }
+
+    pub fn set_fee_bps(ctx: Context<AdminOnly>, fee_bps: u16) -> Result<()> {
+        require!(fee_bps <= 1_000, PumpOrRugError::FeeTooHigh);
+        let cfg = &mut ctx.accounts.global_config;
+        cfg.fee_bps = fee_bps;
+        Ok(())
+    }
+
+    pub fn set_paused(ctx: Context<AdminOnly>, paused: bool) -> Result<()> {
+        let cfg = &mut ctx.accounts.global_config;
+        cfg.paused = paused;
+        Ok(())
+    }
+
     pub fn create_round(
         ctx: Context<CreateRound>,
         round_id: u64,
@@ -29,11 +54,6 @@ pub mod pump_or_rug_escrow {
     ) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
         require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
-        require_keys_eq!(
-            ctx.accounts.admin.key(),
-            ctx.accounts.global_config.admin,
-            PumpOrRugError::Unauthorized
-        );
         require!(open_ts < close_ts && close_ts < settle_ts, PumpOrRugError::InvalidRoundWindow);
         require!(settle_ts > now, PumpOrRugError::InvalidRoundWindow);
 
@@ -131,7 +151,15 @@ pub mod pump_or_rug_escrow {
         let now = Clock::get()?.unix_timestamp;
         let round = &mut ctx.accounts.round;
         require!(round.status == RoundStatus::Open, PumpOrRugError::RoundNotOpen);
-        require!(now >= round.close_ts, PumpOrRugError::RoundNotClosableYet);
+        require!(now >= round.settle_ts, PumpOrRugError::RoundNotClosableYet);
+
+        // Security/fairness guard: can't declare directional outcome if one side has zero stake.
+        if matches!(outcome, RoundOutcome::Pump | RoundOutcome::Rug) {
+            require!(
+                round.total_pump_lamports > 0 && round.total_rug_lamports > 0,
+                PumpOrRugError::InvalidPoolState
+            );
+        }
 
         round.status = RoundStatus::Resolved;
         round.outcome = outcome;
@@ -219,11 +247,6 @@ pub mod pump_or_rug_escrow {
 
     pub fn sweep_fees(ctx: Context<SweepFees>, _round_id: u64) -> Result<()> {
         require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
-        require_keys_eq!(
-            ctx.accounts.admin.key(),
-            ctx.accounts.global_config.admin,
-            PumpOrRugError::Unauthorized
-        );
 
         let round = &mut ctx.accounts.round;
         require!(round.status == RoundStatus::Resolved, PumpOrRugError::RoundNotResolved);
@@ -271,6 +294,19 @@ pub struct InitializeConfig<'info> {
 }
 
 #[derive(Accounts)]
+pub struct AdminOnly<'info> {
+    pub admin: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"global-config"],
+        bump = global_config.bump,
+        has_one = admin @ PumpOrRugError::Unauthorized,
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+}
+
+#[derive(Accounts)]
 #[instruction(round_id: u64)]
 pub struct CreateRound<'info> {
     #[account(mut)]
@@ -279,7 +315,8 @@ pub struct CreateRound<'info> {
     #[account(
         mut,
         seeds = [b"global-config"],
-        bump = global_config.bump
+        bump = global_config.bump,
+        has_one = admin @ PumpOrRugError::Unauthorized,
     )]
     pub global_config: Account<'info, GlobalConfig>,
 
@@ -407,7 +444,8 @@ pub struct SweepFees<'info> {
 
     #[account(
         seeds = [b"global-config"],
-        bump = global_config.bump
+        bump = global_config.bump,
+        has_one = admin @ PumpOrRugError::Unauthorized,
     )]
     pub global_config: Account<'info, GlobalConfig>,
 

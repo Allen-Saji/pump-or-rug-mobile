@@ -13,3 +13,15 @@ This repo currently contains the litepaper docs + implementation guide.
 
 ## Goal
 Ship a mobile-first app and a fun degen-litepaper site that anyone can understand in 60 seconds.
+
+## On-chain status (Anchor 0.32.1)
+Implemented in `programs/pump_or_rug_escrow`:
+- initialize_config
+- admin controls: set_resolver, set_treasury, set_fee_bps, set_paused
+- create_round
+- place_bet (escrow transfer into vault PDA)
+- resolve_round
+- claim (refund/pro-rata payout with fee)
+- sweep_fees
+
+Security review notes: `SECURITY_AUDIT_V1.md`
