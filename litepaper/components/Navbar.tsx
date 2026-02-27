@@ -5,6 +5,7 @@ import Logo from "./Logo";
 
 const sections = [
   { id: "how-it-works", label: "How It Works" },
+  { id: "token-selection", label: "Selection" },
   { id: "settlement", label: "Rules" },
   { id: "anti-manip", label: "Trust" },
   { id: "why-it-sticks", label: "Why Play" },

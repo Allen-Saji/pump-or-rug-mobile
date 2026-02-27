@@ -23,7 +23,25 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Pump or Rug Arena | Litepaper",
   description:
-    "Two launchpads. Two predictions every hour. One leaderboard. The degen prediction arena.",
+    "Two launchpads. Four predictions every hour. One leaderboard. The degen prediction arena.",
+  icons: {
+    icon: "/favicon.svg",
+  },
+  metadataBase: new URL("https://pumporrug.com"),
+  openGraph: {
+    title: "Pump or Rug Arena",
+    description:
+      "Two launchpads. Four predictions every hour. One leaderboard. The degen prediction arena.",
+    siteName: "Pump or Rug",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pump or Rug Arena",
+    description:
+      "Two launchpads. Four predictions every hour. One leaderboard. The degen prediction arena.",
+  },
 };
 
 export default function RootLayout({

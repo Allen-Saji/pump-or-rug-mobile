@@ -11,6 +11,7 @@ import AntiManip from "@/components/AntiManip";
 import WhyItSticks from "@/components/WhyItSticks";
 import Roadmap from "@/components/Roadmap";
 import FAQ from "@/components/FAQ";
+import TokenSelection from "@/components/TokenSelection";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -29,6 +30,8 @@ export default function Home() {
       <ZoneDivider />
 
       {/* === DEEP DIVE === */}
+      <TokenSelection />
+      <div className="divider-gradient max-w-content mx-auto" />
       <Settlement />
       <Scoring />
       <div className="divider-gradient max-w-content mx-auto" />

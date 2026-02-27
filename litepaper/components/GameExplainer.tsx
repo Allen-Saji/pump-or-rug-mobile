@@ -44,7 +44,7 @@ const faqs = [
     icon: <Shuffle size={28} weight="duotone" className="text-pump" />,
     question: "How are tokens picked?",
     answer:
-      "Pulled from pump.fun and bags.fm launchpads automatically. The engine selects them and they're not revealed until the round opens. No one can front-run or pre-position.",
+      "Each platform runs its own independent pipeline. pump.fun and bags.fm each feed tokens through filtering and scoring, then 2 are picked per platform — 4 total per round. They're not revealed until the round opens. No one can front-run or pre-position.",
     accent: "pump",
   },
 ];
