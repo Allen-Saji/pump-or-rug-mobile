@@ -1,0 +1,20 @@
+[package]
+name = "pump_or_rug_escrow"
+version = "0.1.0"
+description = "Pump or Rug escrow betting program"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "pump_or_rug_escrow"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idlc = ["anchor-lang/idl-build"]
+
+[dependencies]
+anchor-lang = { workspace = true }
