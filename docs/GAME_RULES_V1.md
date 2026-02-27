@@ -3,7 +3,9 @@
 _Supersedes V2. Adds variable staking, payout multiplier, streaks, leaderboard, and rebalanced thresholds._
 
 ## Round cadence
-- Every hour: 2 rounds open (pump.fun + bags.fm)
+- Every hour: 4 token slots open
+  - 2 selected from pump.fun
+  - 2 selected from bags.fm
 - Prediction window: first 10 minutes
 - Settlement time: +6 hours from round open
 

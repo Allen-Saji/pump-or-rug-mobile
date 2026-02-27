@@ -55,22 +55,28 @@ const filters = [
 
 const scoringFactors = [
   {
-    label: "Transaction count",
-    desc: "30-minute on-chain tx volume",
+    label: "30m volume (45%)",
+    desc: "Primary liquidity + attention signal",
     color: "text-pump",
     dotColor: "bg-pump",
   },
   {
-    label: "Holder growth",
-    desc: "New unique holders over time",
+    label: "Tx count (30%)",
+    desc: "Broad participation, not one wallet",
     color: "text-accent",
     dotColor: "bg-accent",
   },
   {
-    label: "Social momentum",
-    desc: "Community buzz and mentions",
+    label: "Holder growth (15%)",
+    desc: "New unique holders over time",
     color: "text-warn",
     dotColor: "bg-warn",
+  },
+  {
+    label: "Social momentum (10%)",
+    desc: "Community buzz and mentions",
+    color: "text-primary",
+    dotColor: "bg-primary",
   },
 ];
 
@@ -209,14 +215,12 @@ export default function TokenSelection() {
           </div>
 
           <div className="p-3 rounded-xl bg-surface mb-4">
-            <code className="font-mono text-sm text-primary/80">
-              score = <span className="text-pump">txCount</span> +{" "}
-              <span className="text-accent">holderGrowth</span> +{" "}
-              <span className="text-warn">socialMomentum</span>
+            <code className="font-mono text-xs sm:text-sm text-primary/80">
+              score = 0.45×vol30m + 0.30×txCount + 0.15×holderGrowth + 0.10×social
             </code>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {scoringFactors.map((f, i) => (
               <div key={i} className="flex items-start gap-2.5">
                 <div className={`w-2 h-2 rounded-full ${f.dotColor} mt-1.5 shrink-0`} />

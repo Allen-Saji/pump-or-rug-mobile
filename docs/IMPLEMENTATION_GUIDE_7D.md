@@ -39,7 +39,7 @@
 ---
 
 ## Definition of done (MVP)
-- 2 hourly rounds live
+- 4 hourly token slots live (2 per platform)
 - pick window works
 - auto settlement works
 - leaderboard updates correctly
