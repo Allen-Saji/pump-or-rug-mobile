@@ -14,11 +14,11 @@ const fadeUp = {
 const faqs = [
   {
     q: "What is Pump or Rug?",
-    a: "A prediction game. Every hour, two freshly launched tokens appear. You have 10 minutes to call PUMP (it moons) or RUG (it dies). After 6 hours the price is checked and you find out if you were right.",
+    a: "A prediction game. Every hour, four tokens appear — two from pump.fun, two from bags.fm. You have 10 minutes to call PUMP or RUG on each. After 6 hours the price is checked and you find out if you were right.",
   },
   {
     q: "What does PUMP mean? What about RUG?",
-    a: "PUMP means you think the token's price will at least 2x within 6 hours. RUG means you think it'll crash 50%+ or the liquidity will drain. These come from crypto slang: \"pump\" = price goes up, \"rug pull\" = creators dump and run.",
+    a: "PUMP means you think the token's price will rise at least 20% within 6 hours while liquidity stays healthy. RUG means you think it'll drop 20%+ or the liquidity will drain. These come from crypto slang: \"pump\" = price goes up, \"rug pull\" = creators dump and run.",
   },
   {
     q: "What is TWAP?",
@@ -30,15 +30,15 @@ const faqs = [
   },
   {
     q: "What is SOL?",
-    a: "Solana's native cryptocurrency. Entry costs 0.001 SOL per pick (roughly $0.14).",
+    a: "Solana's native cryptocurrency. You stake 0.01 to 3 SOL per pick.",
   },
   {
     q: "What does VOID mean?",
-    a: "A round gets voided when the data is bad: not enough liquidity, not enough volume, missing price data, or the price sources disagree too much. Nobody wins or loses points on a voided round.",
+    a: "A round gets voided when the data is bad: not enough liquidity, not enough volume, missing price data, or the price sources disagree too much. Nobody wins or loses points, and stakes are refunded.",
   },
   {
     q: "What is NO SCORE?",
-    a: "When the price doesn't move enough to qualify as a PUMP or a RUG. The token just kind of sat there. Nobody scores.",
+    a: "When the price doesn't move enough to qualify as a PUMP or a RUG. The token just kind of sat there. Nobody scores, and stakes are refunded.",
   },
   {
     q: "What do P0, P1, L0, L1 mean?",
@@ -46,7 +46,19 @@ const faqs = [
   },
   {
     q: "How does scoring work?",
-    a: "Correct call = +10 points. Wrong call = -8 points. If you nail both tokens in a round, +3 bonus. Streaks of correct calls build a multiplier. Break the streak and it resets.",
+    a: "Points track reputation and are independent of stake. Correct call = +10 points. Wrong call = -3 points. Get 3 of 4 right in a round for a +5 bonus. Perfect round (4/4) = +15 bonus. Win streaks multiply points up to 2.5x. Break-even accuracy is 23.1%.",
+  },
+  {
+    q: "How do payouts work?",
+    a: "Stake 0.01–3 SOL per pick. Win = 1.8x your stake returned. Lose = you lose your stake. VOID or NO SCORE = full refund. There's a 5% rake on winnings only (effective return 1.76x), which funds the prize pool and operations.",
+  },
+  {
+    q: "What is the leaderboard?",
+    a: "Players are ranked by points (not by how much they stake). Leaderboards run daily, weekly, by season (4 weeks), and all-time. Season prize pool comes from accumulated rake: #1 gets 50%, #2-3 share 20%, #4-10 share 20%, #11-50 share 10%. Minimum 20 picks/week for eligibility.",
+  },
+  {
+    q: "How do streaks work?",
+    a: "Win streaks: consecutive correct picks build a point multiplier — 1.2x at 3 picks, 1.5x at 5, 2.0x at 8, capped at 2.5x at 12+. One wrong pick resets it. VOID/NS freezes the streak. Daily streaks: play at least once per day (UTC) for bonus points — Day 1: +5, Day 3: +10, Day 7: +25 + badge, Day 14: +50, Day 30: +100 + Degen of the Month badge. Miss a day and it resets.",
   },
   {
     q: "Why 6 hours instead of 15 minutes?",
@@ -54,19 +66,15 @@ const faqs = [
   },
   {
     q: "Can someone manipulate the outcome?",
-    a: "We've made it very expensive to try. Minimum liquidity and volume floors, TWAP instead of spot price, outlier trade filtering, and multi-source price checks. Estimated manipulation cost is $10,000+ per round.",
+    a: "We've made it very expensive to try. Minimum liquidity and volume floors, TWAP instead of spot price, outlier trade filtering, and multi-source price checks. Max round profit is ~9 SOL, well below the $7k+ manipulation cost.",
   },
   {
     q: "What does \"sell-blocked\" mean?",
     a: "Some scam tokens let you buy but block you from selling. If we detect this behavior, the token is automatically ruled a RUG.",
   },
   {
-    q: "What is a streak?",
-    a: "Consecutive correct predictions. The longer your streak, the higher your multiplier. One wrong call resets it to zero.",
-  },
-  {
     q: "Is this gambling?",
-    a: "It's a prediction game with a fixed entry cost and a scoring system based on accuracy. There's no house edge taking a cut of a pot. You're scored on whether your read was right.",
+    a: "It's a prediction game with variable stakes (0.01–3 SOL per pick) and a scoring system based on accuracy. The 5% rake on winnings funds the prize pool that gets redistributed to top players. Points are stake-independent — you can't buy your way to the top of the leaderboard.",
   },
 ];
 
