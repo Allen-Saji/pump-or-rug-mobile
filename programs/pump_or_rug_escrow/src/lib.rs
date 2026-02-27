@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::{program::invoke_signed, system_instruction};
 use anchor_lang::system_program::{transfer, Transfer};
 
 declare_id!("PuRugx6dQ9v3KfJdV8s8Yw6Qf2mUQ7uXjR4T9n2k3Lm");
@@ -70,6 +71,30 @@ pub mod pump_or_rug_escrow {
         round.fees_collected_lamports = 0;
         round.bump = ctx.bumps.round;
         round.vault_bump = ctx.bumps.vault;
+
+        // Create the vault PDA as a 0-data system account.
+        if ctx.accounts.vault.data_is_empty() {
+            let rent_lamports = Rent::get()?.minimum_balance(0);
+            let ix = system_instruction::create_account(
+                &ctx.accounts.admin.key(),
+                &ctx.accounts.vault.key(),
+                rent_lamports,
+                0,
+                &anchor_lang::solana_program::system_program::ID,
+            );
+            let round_key = round.key();
+            let vault_signer: &[&[u8]] = &[b"vault", round_key.as_ref(), &[round.vault_bump]];
+            invoke_signed(
+                &ix,
+                &[
+                    ctx.accounts.admin.to_account_info(),
+                    ctx.accounts.vault.to_account_info(),
+                    ctx.accounts.system_program.to_account_info(),
+                ],
+                &[vault_signer],
+            )?;
+        }
+
         Ok(())
     }
 
@@ -195,27 +220,14 @@ pub mod pump_or_rug_escrow {
 
                     require!(winner_pool > 0, PumpOrRugError::InvalidPoolState);
 
-                    let profit_share = ((loser_pool as u128)
-                        .checked_mul(pos.amount_lamports as u128)
-                        .ok_or(PumpOrRugError::MathOverflow)?)
-                        .checked_div(winner_pool as u128)
-                        .ok_or(PumpOrRugError::MathOverflow)? as u64;
+                    let (payout_amount, fee) = compute_winner_payout(
+                        pos.amount_lamports,
+                        winner_pool,
+                        loser_pool,
+                        cfg.fee_bps,
+                    )?;
 
-                    let fee = ((profit_share as u128)
-                        .checked_mul(cfg.fee_bps as u128)
-                        .ok_or(PumpOrRugError::MathOverflow)?)
-                        .checked_div(10_000)
-                        .ok_or(PumpOrRugError::MathOverflow)? as u64;
-
-                    let net_profit = profit_share
-                        .checked_sub(fee)
-                        .ok_or(PumpOrRugError::MathOverflow)?;
-
-                    payout = pos
-                        .amount_lamports
-                        .checked_add(net_profit)
-                        .ok_or(PumpOrRugError::MathOverflow)?;
-
+                    payout = payout_amount;
                     round.fees_collected_lamports = round
                         .fees_collected_lamports
                         .checked_add(fee)
@@ -273,6 +285,37 @@ pub mod pump_or_rug_escrow {
     }
 }
 
+fn compute_winner_payout(
+    user_stake: u64,
+    winner_pool: u64,
+    loser_pool: u64,
+    fee_bps: u16,
+) -> Result<(u64, u64)> {
+    require!(winner_pool > 0, PumpOrRugError::InvalidPoolState);
+
+    let profit_share = ((loser_pool as u128)
+        .checked_mul(user_stake as u128)
+        .ok_or(PumpOrRugError::MathOverflow)?)
+        .checked_div(winner_pool as u128)
+        .ok_or(PumpOrRugError::MathOverflow)? as u64;
+
+    let fee = ((profit_share as u128)
+        .checked_mul(fee_bps as u128)
+        .ok_or(PumpOrRugError::MathOverflow)?)
+        .checked_div(10_000)
+        .ok_or(PumpOrRugError::MathOverflow)? as u64;
+
+    let net_profit = profit_share
+        .checked_sub(fee)
+        .ok_or(PumpOrRugError::MathOverflow)?;
+
+    let payout = user_stake
+        .checked_add(net_profit)
+        .ok_or(PumpOrRugError::MathOverflow)?;
+
+    Ok((payout, fee))
+}
+
 #[derive(Accounts)]
 pub struct InitializeConfig<'info> {
     #[account(mut)]
@@ -324,19 +367,18 @@ pub struct CreateRound<'info> {
         init,
         payer = admin,
         space = 8 + Round::INIT_SPACE,
-        seeds = [b"round", &round_id.to_le_bytes()],
+        seeds = [b"round", round_id.to_le_bytes().as_ref()],
         bump
     )]
     pub round: Account<'info, Round>,
 
     #[account(
-        init,
-        payer = admin,
+        mut,
         seeds = [b"vault", round.key().as_ref()],
-        bump,
-        space = 0
+        bump
     )]
-    pub vault: SystemAccount<'info>,
+    /// CHECK: created via invoke_signed in create_round
+    pub vault: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
 }
@@ -355,7 +397,7 @@ pub struct PlaceBet<'info> {
 
     #[account(
         mut,
-        seeds = [b"round", &round_id.to_le_bytes()],
+        seeds = [b"round", round_id.to_le_bytes().as_ref()],
         bump = round.bump
     )]
     pub round: Account<'info, Round>,
@@ -392,7 +434,7 @@ pub struct ResolveRound<'info> {
 
     #[account(
         mut,
-        seeds = [b"round", &round_id.to_le_bytes()],
+        seeds = [b"round", round_id.to_le_bytes().as_ref()],
         bump = round.bump
     )]
     pub round: Account<'info, Round>,
@@ -412,7 +454,7 @@ pub struct Claim<'info> {
 
     #[account(
         mut,
-        seeds = [b"round", &round_id.to_le_bytes()],
+        seeds = [b"round", round_id.to_le_bytes().as_ref()],
         bump = round.bump
     )]
     pub round: Account<'info, Round>,
@@ -451,7 +493,7 @@ pub struct SweepFees<'info> {
 
     #[account(
         mut,
-        seeds = [b"round", &round_id.to_le_bytes()],
+        seeds = [b"round", round_id.to_le_bytes().as_ref()],
         bump = round.bump
     )]
     pub round: Account<'info, Round>,
@@ -564,4 +606,31 @@ pub enum PumpOrRugError {
     InvalidPoolState,
     #[msg("No fees to sweep")]
     NothingToSweep,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn payout_formula_happy_path() {
+        // user stake 1 SOL, winner pool 4 SOL, loser pool 2 SOL, fee=5%
+        // share = 2 * (1/4) = 0.5 SOL; fee=0.025 SOL; payout=1.475 SOL
+        let (payout, fee) = compute_winner_payout(1_000_000_000, 4_000_000_000, 2_000_000_000, 500)
+            .expect("should compute");
+        assert_eq!(fee, 25_000_000);
+        assert_eq!(payout, 1_475_000_000);
+    }
+
+    #[test]
+    fn payout_formula_zero_fee() {
+        let (payout, fee) = compute_winner_payout(100, 1000, 1000, 0).expect("should compute");
+        assert_eq!(fee, 0);
+        assert_eq!(payout, 200);
+    }
+
+    #[test]
+    fn payout_formula_rejects_zero_winner_pool() {
+        assert!(compute_winner_payout(100, 0, 1000, 500).is_err());
+    }
 }

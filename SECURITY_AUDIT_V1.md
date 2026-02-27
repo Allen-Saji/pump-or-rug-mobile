@@ -81,10 +81,19 @@ Adversaries:
 
 ---
 
+## Verification status (current)
+
+- `anchor build` ✅
+- `anchor test` ✅ (program unit tests + localnet bootstrap)
+- Rust unit tests added for payout math edge cases:
+  - happy path fee/payout
+  - zero fee path
+  - invalid zero winner-pool rejection
+
 ## Recommended Next Hardening (Post-hackathon)
 
 1. Add event logs for all critical state changes
-2. Add integration tests with exact payout accounting across many bettors
+2. Add full TS integration tests with exact payout accounting across many bettors
 3. Add formal invariant/property tests (sum of payouts + fees <= vault inflow)
 4. Add oracle attestation model for resolution proofs
 5. Add `close_round` instruction for dust handling + lifecycle finalization
