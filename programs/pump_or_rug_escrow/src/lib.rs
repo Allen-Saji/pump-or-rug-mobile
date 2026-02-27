@@ -47,6 +47,7 @@ pub mod pump_or_rug_escrow {
         round.total_pool_lamports = 0;
         round.total_pump_lamports = 0;
         round.total_rug_lamports = 0;
+        round.fees_collected_lamports = 0;
         round.bump = ctx.bumps.round;
         round.vault_bump = ctx.bumps.vault;
         Ok(())
@@ -106,6 +107,145 @@ pub mod pump_or_rug_escrow {
             }
         }
 
+        Ok(())
+    }
+
+    pub fn resolve_round(
+        ctx: Context<ResolveRound>,
+        _round_id: u64,
+        outcome: RoundOutcome,
+    ) -> Result<()> {
+        require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
+        require!(
+            outcome != RoundOutcome::Unknown,
+            PumpOrRugError::InvalidOutcome
+        );
+
+        let caller = ctx.accounts.resolver.key();
+        let cfg = &ctx.accounts.global_config;
+        require!(
+            caller == cfg.admin || caller == cfg.resolver,
+            PumpOrRugError::Unauthorized
+        );
+
+        let now = Clock::get()?.unix_timestamp;
+        let round = &mut ctx.accounts.round;
+        require!(round.status == RoundStatus::Open, PumpOrRugError::RoundNotOpen);
+        require!(now >= round.close_ts, PumpOrRugError::RoundNotClosableYet);
+
+        round.status = RoundStatus::Resolved;
+        round.outcome = outcome;
+        Ok(())
+    }
+
+    pub fn claim(ctx: Context<Claim>, _round_id: u64) -> Result<()> {
+        let cfg = &ctx.accounts.global_config;
+        let round = &mut ctx.accounts.round;
+        let pos = &mut ctx.accounts.bet_position;
+
+        require!(round.status == RoundStatus::Resolved, PumpOrRugError::RoundNotResolved);
+        require!(!pos.claimed, PumpOrRugError::AlreadyClaimed);
+
+        let mut payout: u64 = 0;
+
+        match round.outcome {
+            RoundOutcome::Void | RoundOutcome::NoScore => {
+                payout = pos.amount_lamports;
+            }
+            RoundOutcome::Pump | RoundOutcome::Rug => {
+                let is_winner = matches!(
+                    (round.outcome, pos.side),
+                    (RoundOutcome::Pump, BetSide::Pump) | (RoundOutcome::Rug, BetSide::Rug)
+                );
+
+                if is_winner {
+                    let (winner_pool, loser_pool) = match round.outcome {
+                        RoundOutcome::Pump => (round.total_pump_lamports, round.total_rug_lamports),
+                        RoundOutcome::Rug => (round.total_rug_lamports, round.total_pump_lamports),
+                        _ => (0, 0),
+                    };
+
+                    require!(winner_pool > 0, PumpOrRugError::InvalidPoolState);
+
+                    let profit_share = ((loser_pool as u128)
+                        .checked_mul(pos.amount_lamports as u128)
+                        .ok_or(PumpOrRugError::MathOverflow)?)
+                        .checked_div(winner_pool as u128)
+                        .ok_or(PumpOrRugError::MathOverflow)? as u64;
+
+                    let fee = ((profit_share as u128)
+                        .checked_mul(cfg.fee_bps as u128)
+                        .ok_or(PumpOrRugError::MathOverflow)?)
+                        .checked_div(10_000)
+                        .ok_or(PumpOrRugError::MathOverflow)? as u64;
+
+                    let net_profit = profit_share
+                        .checked_sub(fee)
+                        .ok_or(PumpOrRugError::MathOverflow)?;
+
+                    payout = pos
+                        .amount_lamports
+                        .checked_add(net_profit)
+                        .ok_or(PumpOrRugError::MathOverflow)?;
+
+                    round.fees_collected_lamports = round
+                        .fees_collected_lamports
+                        .checked_add(fee)
+                        .ok_or(PumpOrRugError::MathOverflow)?;
+                }
+            }
+            RoundOutcome::Unknown => return err!(PumpOrRugError::InvalidOutcome),
+        }
+
+        if payout > 0 {
+            let round_key = round.key();
+            let signer_seeds: &[&[u8]] = &[b"vault", round_key.as_ref(), &[round.vault_bump]];
+            transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.system_program.to_account_info(),
+                    Transfer {
+                        from: ctx.accounts.vault.to_account_info(),
+                        to: ctx.accounts.user.to_account_info(),
+                    },
+                    &[signer_seeds],
+                ),
+                payout,
+            )?;
+        }
+
+        pos.claimed = true;
+        Ok(())
+    }
+
+    pub fn sweep_fees(ctx: Context<SweepFees>, _round_id: u64) -> Result<()> {
+        require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
+        require_keys_eq!(
+            ctx.accounts.admin.key(),
+            ctx.accounts.global_config.admin,
+            PumpOrRugError::Unauthorized
+        );
+
+        let round = &mut ctx.accounts.round;
+        require!(round.status == RoundStatus::Resolved, PumpOrRugError::RoundNotResolved);
+
+        let amount = round.fees_collected_lamports;
+        require!(amount > 0, PumpOrRugError::NothingToSweep);
+
+        let round_key = round.key();
+        let signer_seeds: &[&[u8]] = &[b"vault", round_key.as_ref(), &[round.vault_bump]];
+        transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.vault.to_account_info(),
+                    to: ctx.accounts.treasury.to_account_info(),
+                },
+                &[signer_seeds],
+            ),
+            amount,
+        )?;
+
+        round.fees_collected_lamports = 0;
         Ok(())
     }
 }
@@ -202,6 +342,99 @@ pub struct PlaceBet<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+#[instruction(round_id: u64)]
+pub struct ResolveRound<'info> {
+    pub resolver: Signer<'info>,
+
+    #[account(
+        seeds = [b"global-config"],
+        bump = global_config.bump
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+
+    #[account(
+        mut,
+        seeds = [b"round", &round_id.to_le_bytes()],
+        bump = round.bump
+    )]
+    pub round: Account<'info, Round>,
+}
+
+#[derive(Accounts)]
+#[instruction(round_id: u64)]
+pub struct Claim<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    #[account(
+        seeds = [b"global-config"],
+        bump = global_config.bump
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+
+    #[account(
+        mut,
+        seeds = [b"round", &round_id.to_le_bytes()],
+        bump = round.bump
+    )]
+    pub round: Account<'info, Round>,
+
+    #[account(
+        mut,
+        seeds = [b"vault", round.key().as_ref()],
+        bump = round.vault_bump
+    )]
+    pub vault: SystemAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"bet", round.key().as_ref(), user.key().as_ref()],
+        bump = bet_position.bump,
+        constraint = bet_position.user == user.key() @ PumpOrRugError::Unauthorized,
+        constraint = bet_position.round == round.key() @ PumpOrRugError::Unauthorized,
+    )]
+    pub bet_position: Account<'info, BetPosition>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(round_id: u64)]
+pub struct SweepFees<'info> {
+    #[account(mut)]
+    pub admin: Signer<'info>,
+
+    #[account(
+        seeds = [b"global-config"],
+        bump = global_config.bump
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+
+    #[account(
+        mut,
+        seeds = [b"round", &round_id.to_le_bytes()],
+        bump = round.bump
+    )]
+    pub round: Account<'info, Round>,
+
+    #[account(
+        mut,
+        seeds = [b"vault", round.key().as_ref()],
+        bump = round.vault_bump
+    )]
+    pub vault: SystemAccount<'info>,
+
+    #[account(
+        mut,
+        address = global_config.treasury
+    )]
+    /// CHECK: treasury destination validated by address
+    pub treasury: UncheckedAccount<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct GlobalConfig {
@@ -225,6 +458,7 @@ pub struct Round {
     pub total_pool_lamports: u64,
     pub total_pump_lamports: u64,
     pub total_rug_lamports: u64,
+    pub fees_collected_lamports: u64,
     pub bump: u8,
     pub vault_bump: u8,
 }
@@ -280,4 +514,16 @@ pub enum PumpOrRugError {
     InvalidAmount,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Invalid outcome")]
+    InvalidOutcome,
+    #[msg("Round is not ready to resolve")]
+    RoundNotClosableYet,
+    #[msg("Round not resolved")]
+    RoundNotResolved,
+    #[msg("Position already claimed")]
+    AlreadyClaimed,
+    #[msg("Invalid pool state")]
+    InvalidPoolState,
+    #[msg("No fees to sweep")]
+    NothingToSweep,
 }
