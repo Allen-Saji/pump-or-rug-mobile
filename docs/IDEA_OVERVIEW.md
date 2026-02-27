@@ -19,6 +19,12 @@ Most launchpad activity is chaos. People want signal, fun, and competition.
 - 2 taps per prediction
 - Push notifications for round open + settlement
 
+## Anti-manipulation by design
+- TWAP pricing with outlier filters — single trades can't distort outcomes
+- High liquidity + volume floors — gaming a round costs ~$10k+ (uneconomical)
+- Hidden token selection + simultaneous prediction reveal — no front-running or herding
+- 0.001 SOL prediction fee — kills bot armies while staying negligible for real players
+
 ## Why this can be viral
 - Degen-native format
 - Constant hourly action
