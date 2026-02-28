@@ -33,6 +33,7 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontFamily: "SpaceMono",
           fontSize: 11,
+          fontWeight: "600",
         },
       }}
     >
