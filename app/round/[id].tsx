@@ -18,7 +18,7 @@ import type { BetSide, Token } from "@/lib/types";
 export default function RoundDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { currentRound, loadRound, user, placeBet } = useStore();
+  const { currentRound, loadRound, userBets: allUserBets, placeBet } = useStore();
   const [betToken, setBetToken] = useState<Token | null>(null);
   const [betSide, setBetSide] = useState<BetSide | null>(null);
 
@@ -74,7 +74,7 @@ export default function RoundDetailScreen() {
   const isSettled = currentRound.status === "settled";
 
   const userBets =
-    user?.bets.filter((b) => b.roundId === currentRound.id) ?? [];
+    allUserBets.filter((b) => b.roundId === currentRound.id);
   const totalStaked = userBets.reduce((s, b) => s + b.amount, 0);
   const totalPayout = userBets.reduce((s, b) => s + (b.payout ?? 0), 0);
   const pnl = totalPayout - totalStaked;

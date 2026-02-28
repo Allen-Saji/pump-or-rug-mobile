@@ -8,9 +8,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Colors, Gradients, Glows } from "@/constants/theme";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { RoundCard } from "@/components/RoundCard";
 import { BetSheet } from "@/components/BetSheet";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
@@ -18,8 +20,8 @@ import { SkeletonRoundCard } from "@/components/SkeletonRoundCard";
 import type { BetSide, Token } from "@/lib/types";
 
 export default function HomeScreen() {
-  const { rounds, loadRounds, user, placeBet, walletConnected, connectWallet, loading } =
-    useStore();
+  const { rounds, loadRounds, placeBet, loading } = useStore();
+  const { authenticated, truncatedAddress } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [betToken, setBetToken] = useState<Token | null>(null);
   const [betSide, setBetSide] = useState<BetSide | null>(null);
@@ -51,6 +53,12 @@ export default function HomeScreen() {
       setBetToken(null);
       setBetSide(null);
       setBetRoundId(null);
+    }
+  };
+
+  const handleConnectPress = () => {
+    if (!authenticated) {
+      router.push("/login");
     }
   };
 
@@ -88,45 +96,29 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        <View className="flex-row items-center gap-3">
-          {user && (
-            <AnimatedEntry>
-              <LinearGradient
-                colors={[Colors.gold + "20", Colors.dark100]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                className="flex-row items-center gap-1 rounded-full px-3 py-1.5"
-              >
-                <Ionicons name="star" size={14} color={Colors.gold} />
-                <Text className="text-white font-mono font-bold text-sm">
-                  {user.points.toLocaleString()}
-                </Text>
-              </LinearGradient>
-            </AnimatedEntry>
-          )}
-
-          <Pressable
-            onPress={connectWallet}
-            className="rounded-full px-3 py-1.5"
+        <Pressable
+          onPress={handleConnectPress}
+          className="rounded-full px-3 py-1.5"
+          style={{
+            backgroundColor: authenticated
+              ? Colors.pump + "20"
+              : Colors.dark200,
+            borderWidth: 1,
+            borderColor: authenticated ? Colors.pump + "40" : Colors.dark300,
+            ...(authenticated ? Glows.pumpSubtle : {}),
+          }}
+        >
+          <Text
+            className="font-mono text-xs font-bold"
             style={{
-              backgroundColor: walletConnected
-                ? Colors.pump + "20"
-                : Colors.dark200,
-              borderWidth: 1,
-              borderColor: walletConnected ? Colors.pump + "40" : Colors.dark300,
-              ...(walletConnected ? Glows.pumpSubtle : {}),
+              color: authenticated ? Colors.pump : Colors.whiteDim,
             }}
           >
-            <Text
-              className="font-mono text-xs font-bold"
-              style={{
-                color: walletConnected ? Colors.pump : Colors.whiteDim,
-              }}
-            >
-              {walletConnected ? "7xKX...9fGh" : "Connect"}
-            </Text>
-          </Pressable>
-        </View>
+            {authenticated && truncatedAddress
+              ? truncatedAddress
+              : "Connect"}
+          </Text>
+        </Pressable>
       </LinearGradient>
 
       <ScrollView

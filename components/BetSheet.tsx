@@ -6,7 +6,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import LottieView from "lottie-react-native";
+import { router } from "expo-router";
 import { Colors, Gradients, Glows } from "@/constants/theme";
+import { useAuth } from "@/lib/auth";
 import type { BetSide, Token } from "@/lib/types";
 
 interface BetSheetProps {
@@ -29,19 +31,25 @@ export function BetSheet({
   const [amount, setAmount] = useState(0.1);
   const [activeStake, setActiveStake] = useState<number | null>(0.1);
   const [confirmed, setConfirmed] = useState(false);
+  const { authenticated } = useAuth();
   const isPump = side === "pump";
   const color = isPump ? Colors.pump : Colors.rug;
   const glow = isPump ? Glows.pump : Glows.rug;
   const insets = useSafeAreaInsets();
 
   const handleConfirm = useCallback(() => {
+    if (!authenticated) {
+      onClose();
+      router.push("/login");
+      return;
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setConfirmed(true);
     setTimeout(() => {
       setConfirmed(false);
       onConfirm(amount);
     }, 1500);
-  }, [amount, onConfirm]);
+  }, [amount, onConfirm, authenticated, onClose]);
 
   const handleClose = () => {
     setConfirmed(false);

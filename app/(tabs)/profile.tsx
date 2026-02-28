@@ -1,33 +1,85 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Colors, Gradients, Glows } from "@/constants/theme";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { GlowCard } from "@/components/GlowCard";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
-import { StreakBanner } from "@/components/StreakBanner";
 import { ResultBadge } from "@/components/ResultBadge";
-import LottieView from "lottie-react-native";
-import { SkeletonProfile } from "@/components/SkeletonProfile";
 
 export default function ProfileScreen() {
-  const { user, walletConnected, connectWallet } = useStore();
+  const { userBets } = useStore();
+  const { authenticated, user, walletAddress, truncatedAddress, logout } =
+    useAuth();
 
-  if (!user) {
+  // Guest view — prompt to log in
+  if (!authenticated) {
     return (
       <SafeAreaView
         className="flex-1"
         style={{ backgroundColor: Colors.dark }}
       >
-        <SkeletonProfile />
+        <View className="flex-1 items-center justify-center px-6">
+          <AnimatedEntry>
+            <View className="items-center">
+              <LinearGradient
+                colors={[Colors.pump + "30", Colors.dark100]}
+                className="w-20 h-20 rounded-full items-center justify-center mb-4"
+              >
+                <Ionicons name="person" size={32} color={Colors.whiteDim} />
+              </LinearGradient>
+              <Text className="text-white font-bold font-mono text-lg mb-2">
+                Not signed in
+              </Text>
+              <Text className="text-white/40 font-mono text-sm text-center mb-6">
+                Sign in to track your bets, stats, and climb the leaderboard
+              </Text>
+              <Pressable onPress={() => router.push("/login")}>
+                <LinearGradient
+                  colors={Gradients.pumpButton}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  className="rounded-xl px-8 py-3"
+                  style={Glows.pumpSubtle}
+                >
+                  <Text className="text-dark font-bold font-mono text-base">
+                    Sign In
+                  </Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
+          </AnimatedEntry>
+        </View>
       </SafeAreaView>
     );
   }
 
+  // Derive display name from Privy user linked accounts
+  const googleAccount = user?.linked_accounts?.find(
+    (a) => a.type === "google_oauth"
+  );
+  const twitterAccount = user?.linked_accounts?.find(
+    (a) => a.type === "twitter_oauth"
+  );
+  const displayName =
+    (googleAccount && "name" in googleAccount ? googleAccount.name : null) ??
+    (twitterAccount && "username" in twitterAccount
+      ? twitterAccount.username
+      : null) ??
+    truncatedAddress ??
+    "Anon";
+
+  const initials = displayName.slice(0, 2).toUpperCase();
+
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.dark }}>
-      <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1 px-4"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <AnimatedEntry>
           <View className="items-center pt-4 pb-6">
@@ -44,211 +96,119 @@ export default function ProfileScreen() {
                 style={{ backgroundColor: Colors.dark }}
               >
                 <Text className="text-pump font-bold font-mono text-2xl">
-                  {user.displayName.slice(0, 2).toUpperCase()}
+                  {initials}
                 </Text>
               </View>
             </LinearGradient>
 
             <Text className="text-white font-bold font-mono text-lg">
-              {user.displayName}
+              {displayName}
             </Text>
 
-            {/* Wallet */}
-            <Pressable
-              onPress={connectWallet}
-              className="flex-row items-center gap-1.5 mt-1 px-3 py-1 rounded-full"
-              style={{ backgroundColor: Colors.dark200 }}
-            >
-              <Ionicons
-                name="wallet"
-                size={12}
-                color={walletConnected ? Colors.pump : Colors.whiteDim}
-              />
-              <Text
-                className="font-mono text-xs"
-                style={{
-                  color: walletConnected ? Colors.pump : Colors.whiteDim,
-                }}
+            {/* Wallet address */}
+            {walletAddress && (
+              <View
+                className="flex-row items-center gap-1.5 mt-1 px-3 py-1 rounded-full"
+                style={{ backgroundColor: Colors.dark200 }}
               >
-                {walletConnected ? user.walletAddress : "Connect Wallet"}
-              </Text>
-            </Pressable>
-          </View>
-        </AnimatedEntry>
-
-        {/* Stats row */}
-        <AnimatedEntry index={1}>
-          <View className="flex-row gap-2 mb-4">
-            <StatBox
-              label="POINTS"
-              value={user.points.toLocaleString()}
-              icon="star"
-              color={Colors.gold}
-            />
-            <StatBox
-              label="RANK"
-              value={`#${user.rank}`}
-              icon="trophy"
-              color={Colors.pump}
-            />
-            <StatBox
-              label="WIN RATE"
-              value={`${Math.round((user.totalWins / user.totalBets) * 100)}%`}
-              icon="trending-up"
-              color={Colors.pump}
-            />
-          </View>
-        </AnimatedEntry>
-
-        {/* Streaks */}
-        <AnimatedEntry index={2}>
-          <StreakBanner
-            winStreak={user.winStreak}
-            dailyStreak={user.dailyStreak}
-          />
-        </AnimatedEntry>
-
-        {/* Badges */}
-        <AnimatedEntry index={3}>
-          <View className="mt-6 mb-4">
-            <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
-              Badges
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {user.badges.map((badge) => (
-                <GlowCard
-                  key={badge.id}
-                  glowColor={Colors.gold + "40"}
-                  className="px-3 py-2 flex-row items-center gap-2"
+                <Ionicons name="wallet" size={12} color={Colors.pump} />
+                <Text
+                  className="font-mono text-xs"
+                  style={{ color: Colors.pump }}
                 >
-                  <Ionicons
-                    name={
-                      badge.icon === "fire"
-                        ? "flame"
-                        : badge.icon === "moon"
-                          ? "moon"
-                          : "flash"
-                    }
-                    size={16}
-                    color={Colors.gold}
-                  />
-                  <View>
-                    <Text className="text-white font-mono text-xs font-bold">
-                      {badge.name}
-                    </Text>
-                    <Text className="text-white/40 font-mono text-[10px]">
-                      {badge.description}
-                    </Text>
-                  </View>
-                </GlowCard>
-              ))}
-            </View>
+                  {truncatedAddress}
+                </Text>
+              </View>
+            )}
           </View>
         </AnimatedEntry>
 
         {/* Bet history */}
-        <AnimatedEntry index={4}>
-          <View className="mt-2 mb-8">
-            <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
-              Bet History
-            </Text>
-            {user.bets.map((bet, i) => (
-              <GlowCard
-                key={`${bet.id}-${i}`}
-                borderColor={Colors.dark300 + "30"}
-                className="flex-row items-center justify-between p-3 mb-1.5"
-              >
-                <View className="flex-row items-center gap-3">
-                  <LinearGradient
-                    colors={[
-                      (bet.side === "pump" ? Colors.pump : Colors.rug) + "30",
-                      (bet.side === "pump" ? Colors.pump : Colors.rug) + "10",
-                    ]}
-                    className="w-8 h-8 rounded-full items-center justify-center"
-                  >
-                    <Ionicons
-                      name={bet.side === "pump" ? "arrow-up" : "arrow-down"}
-                      size={16}
-                      color={bet.side === "pump" ? Colors.pump : Colors.rug}
-                    />
-                  </LinearGradient>
-                  <View>
-                    <Text className="text-white font-mono font-bold text-sm">
-                      {bet.tokenTicker}
-                    </Text>
-                    <Text className="text-white/40 font-mono text-[10px]">
-                      {bet.amount} SOL
-                    </Text>
-                  </View>
-                </View>
-
-                <View className="items-end">
-                  {bet.result ? (
-                    <>
-                      <ResultBadge result={bet.result} />
-                      <Text
-                        className="font-mono text-xs font-bold mt-1"
-                        style={{
-                          color:
-                            (bet.payout ?? 0) > bet.amount
-                              ? Colors.pump
-                              : Colors.rug,
-                        }}
-                      >
-                        {(bet.payout ?? 0) > bet.amount ? "+" : ""}
-                        {((bet.payout ?? 0) - bet.amount).toFixed(2)} SOL
-                      </Text>
-                    </>
-                  ) : (
-                    <Text className="text-white/30 font-mono text-xs">
-                      Pending
-                    </Text>
-                  )}
-                </View>
-              </GlowCard>
-            ))}
-          </View>
-        </AnimatedEntry>
-
-        {/* Settings placeholder */}
-        <AnimatedEntry index={5}>
-          <View className="mb-12">
-            <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
-              Settings
-            </Text>
-            <GlowCard className="p-4 items-center">
-              <Text className="text-white/30 font-mono text-sm">
-                Coming soon
+        {userBets.length > 0 && (
+          <AnimatedEntry index={1}>
+            <View className="mt-2 mb-8">
+              <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
+                Bet History
               </Text>
-            </GlowCard>
+              {userBets.map((bet, i) => (
+                <GlowCard
+                  key={`${bet.id}-${i}`}
+                  borderColor={Colors.dark300 + "30"}
+                  className="flex-row items-center justify-between p-3 mb-1.5"
+                >
+                  <View className="flex-row items-center gap-3">
+                    <LinearGradient
+                      colors={[
+                        (bet.side === "pump" ? Colors.pump : Colors.rug) +
+                          "30",
+                        (bet.side === "pump" ? Colors.pump : Colors.rug) +
+                          "10",
+                      ]}
+                      className="w-8 h-8 rounded-full items-center justify-center"
+                    >
+                      <Ionicons
+                        name={
+                          bet.side === "pump" ? "arrow-up" : "arrow-down"
+                        }
+                        size={16}
+                        color={
+                          bet.side === "pump" ? Colors.pump : Colors.rug
+                        }
+                      />
+                    </LinearGradient>
+                    <View>
+                      <Text className="text-white font-mono font-bold text-sm">
+                        {bet.tokenTicker}
+                      </Text>
+                      <Text className="text-white/40 font-mono text-[10px]">
+                        {bet.amount} SOL
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className="items-end">
+                    {bet.result ? (
+                      <>
+                        <ResultBadge result={bet.result} />
+                        <Text
+                          className="font-mono text-xs font-bold mt-1"
+                          style={{
+                            color:
+                              (bet.payout ?? 0) > bet.amount
+                                ? Colors.pump
+                                : Colors.rug,
+                          }}
+                        >
+                          {(bet.payout ?? 0) > bet.amount ? "+" : ""}
+                          {((bet.payout ?? 0) - bet.amount).toFixed(2)} SOL
+                        </Text>
+                      </>
+                    ) : (
+                      <Text className="text-white/30 font-mono text-xs">
+                        Pending
+                      </Text>
+                    )}
+                  </View>
+                </GlowCard>
+              ))}
+            </View>
+          </AnimatedEntry>
+        )}
+
+        {/* Logout */}
+        <AnimatedEntry index={2}>
+          <View className="mb-12">
+            <Pressable
+              onPress={logout}
+              className="items-center py-3"
+            >
+              <Text className="text-rug font-mono text-sm font-bold">
+                Sign Out
+              </Text>
+            </Pressable>
           </View>
         </AnimatedEntry>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function StatBox({
-  label,
-  value,
-  icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: string;
-  color: string;
-}) {
-  return (
-    <GlowCard
-      glowColor={color + "30"}
-      className="flex-1 p-3 items-center"
-    >
-      <Ionicons name={icon as any} size={18} color={color} />
-      <Text className="text-white font-bold font-mono text-lg mt-1">
-        {value}
-      </Text>
-      <Text className="text-white/40 font-mono text-[10px]">{label}</Text>
-    </GlowCard>
   );
 }
