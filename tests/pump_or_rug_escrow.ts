@@ -192,5 +192,23 @@ describe("pump_or_rug_escrow e2e", () => {
     const betB = await program.account.betPosition.fetch(betBPda);
     expect(betA.claimed).eq(true);
     expect(betB.claimed).eq(true);
+    expect(round.claimedPositions).eq(round.totalPositions);
+
+    // close round (sweep any residual dust to treasury)
+    await program.methods
+      .closeRound(roundId)
+      .accounts({
+        admin: admin.publicKey,
+        globalConfig: globalConfigPda,
+        round: roundPda,
+        vault: vaultPda,
+        treasury: treasury.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([admin])
+      .rpc();
+
+    round = await program.account.round.fetch(roundPda);
+    expect(round.status).to.have.property("closed");
   });
 });

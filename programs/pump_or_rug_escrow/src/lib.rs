@@ -69,6 +69,8 @@ pub mod pump_or_rug_escrow {
         round.total_pump_lamports = 0;
         round.total_rug_lamports = 0;
         round.fees_collected_lamports = 0;
+        round.total_positions = 0;
+        round.claimed_positions = 0;
         round.bump = ctx.bumps.round;
         round.vault_bump = ctx.bumps.vault;
 
@@ -152,6 +154,11 @@ pub mod pump_or_rug_escrow {
             }
         }
 
+        round.total_positions = round
+            .total_positions
+            .checked_add(1)
+            .ok_or(PumpOrRugError::MathOverflow)?;
+
         Ok(())
     }
 
@@ -188,6 +195,23 @@ pub mod pump_or_rug_escrow {
 
         round.status = RoundStatus::Resolved;
         round.outcome = outcome;
+        Ok(())
+    }
+
+    pub fn cancel_round(ctx: Context<ResolveRound>, _round_id: u64) -> Result<()> {
+        require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
+
+        let caller = ctx.accounts.resolver.key();
+        let cfg = &ctx.accounts.global_config;
+        require!(
+            caller == cfg.admin || caller == cfg.resolver,
+            PumpOrRugError::Unauthorized
+        );
+
+        let round = &mut ctx.accounts.round;
+        require!(round.status == RoundStatus::Open, PumpOrRugError::RoundNotOpen);
+        round.status = RoundStatus::Resolved;
+        round.outcome = RoundOutcome::Void;
         Ok(())
     }
 
@@ -254,6 +278,10 @@ pub mod pump_or_rug_escrow {
         }
 
         pos.claimed = true;
+        round.claimed_positions = round
+            .claimed_positions
+            .checked_add(1)
+            .ok_or(PumpOrRugError::MathOverflow)?;
         Ok(())
     }
 
@@ -281,6 +309,37 @@ pub mod pump_or_rug_escrow {
         )?;
 
         round.fees_collected_lamports = 0;
+        Ok(())
+    }
+
+    pub fn close_round(ctx: Context<CloseRound>, _round_id: u64) -> Result<()> {
+        require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
+
+        let round = &mut ctx.accounts.round;
+        require!(round.status == RoundStatus::Resolved, PumpOrRugError::RoundNotResolved);
+        require!(
+            round.claimed_positions == round.total_positions,
+            PumpOrRugError::ClaimsPending
+        );
+
+        let vault_balance = **ctx.accounts.vault.lamports.borrow();
+        if vault_balance > 0 {
+            let round_key = round.key();
+            let signer_seeds: &[&[u8]] = &[b"vault", round_key.as_ref(), &[round.vault_bump]];
+            transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.system_program.to_account_info(),
+                    Transfer {
+                        from: ctx.accounts.vault.to_account_info(),
+                        to: ctx.accounts.treasury.to_account_info(),
+                    },
+                    &[signer_seeds],
+                ),
+                vault_balance,
+            )?;
+        }
+
+        round.status = RoundStatus::Closed;
         Ok(())
     }
 }
@@ -515,6 +574,43 @@ pub struct SweepFees<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+#[instruction(round_id: u64)]
+pub struct CloseRound<'info> {
+    #[account(mut)]
+    pub admin: Signer<'info>,
+
+    #[account(
+        seeds = [b"global-config"],
+        bump = global_config.bump,
+        has_one = admin @ PumpOrRugError::Unauthorized,
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+
+    #[account(
+        mut,
+        seeds = [b"round", round_id.to_le_bytes().as_ref()],
+        bump = round.bump
+    )]
+    pub round: Account<'info, Round>,
+
+    #[account(
+        mut,
+        seeds = [b"vault", round.key().as_ref()],
+        bump = round.vault_bump
+    )]
+    pub vault: SystemAccount<'info>,
+
+    #[account(
+        mut,
+        address = global_config.treasury
+    )]
+    /// CHECK: treasury destination validated by address
+    pub treasury: UncheckedAccount<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct GlobalConfig {
@@ -539,6 +635,8 @@ pub struct Round {
     pub total_pump_lamports: u64,
     pub total_rug_lamports: u64,
     pub fees_collected_lamports: u64,
+    pub total_positions: u32,
+    pub claimed_positions: u32,
     pub bump: u8,
     pub vault_bump: u8,
 }
@@ -564,6 +662,7 @@ pub enum BetSide {
 pub enum RoundStatus {
     Open,
     Resolved,
+    Closed,
     Cancelled,
 }
 
@@ -606,6 +705,8 @@ pub enum PumpOrRugError {
     InvalidPoolState,
     #[msg("No fees to sweep")]
     NothingToSweep,
+    #[msg("All positions must be claimed before closing")]
+    ClaimsPending,
 }
 
 #[cfg(test)]
