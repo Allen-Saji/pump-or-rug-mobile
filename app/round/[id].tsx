@@ -12,6 +12,7 @@ import { AnimatedEntry } from "@/components/AnimatedEntry";
 import { TokenSlot } from "@/components/TokenSlot";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { BetSheet } from "@/components/BetSheet";
+import { SkeletonRoundDetail } from "@/components/SkeletonRoundDetail";
 import type { BetSide, Token } from "@/lib/types";
 
 export default function RoundDetailScreen() {
@@ -47,16 +48,24 @@ export default function RoundDetailScreen() {
   if (!currentRound) {
     return (
       <SafeAreaView
-        className="flex-1 items-center justify-center"
+        className="flex-1"
         style={{ backgroundColor: Colors.dark }}
       >
-        <LottieView
-          source={require("@/assets/animations/loading-pulse.json")}
-          autoPlay
-          loop
-          style={{ width: 80, height: 80 }}
-        />
-        <Text className="text-white/50 font-mono mt-2">Loading...</Text>
+        {/* Header skeleton */}
+        <LinearGradient
+          colors={Gradients.headerBg}
+          className="flex-row items-center px-4 py-3 gap-3"
+        >
+          <View
+            className="w-9 h-9 rounded-full"
+            style={{ backgroundColor: Colors.dark200 }}
+          />
+          <View style={{ flex: 1, gap: 4 }}>
+            <View style={{ width: 120, height: 18, backgroundColor: Colors.dark200, borderRadius: 6 }} />
+            <View style={{ width: 60, height: 12, backgroundColor: Colors.dark200, borderRadius: 4 }} />
+          </View>
+        </LinearGradient>
+        <SkeletonRoundDetail />
       </SafeAreaView>
     );
   }
@@ -153,8 +162,13 @@ export default function RoundDetailScreen() {
         ))}
 
         {/* Token details */}
+        <AnimatedEntry index={5}>
+          <Text className="text-white/40 font-mono text-xs mb-2 mt-2 uppercase">
+            Price Details
+          </Text>
+        </AnimatedEntry>
         {currentRound.tokens.map((token, i) => (
-          <AnimatedEntry key={`detail-${token.id}`} index={i + 5}>
+          <AnimatedEntry key={`detail-${token.id}`} index={i + 6}>
             <GlowCard className="p-3 mb-2" borderColor={Colors.dark300 + "30"}>
               <Text className="text-white font-bold font-mono text-sm mb-2">
                 {token.ticker} Details
@@ -201,7 +215,7 @@ export default function RoundDetailScreen() {
 
         {/* Your bets */}
         {userBets.length > 0 && (
-          <AnimatedEntry index={8}>
+          <AnimatedEntry index={9}>
             <View className="mt-4 mb-8">
               <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
                 Your Bets

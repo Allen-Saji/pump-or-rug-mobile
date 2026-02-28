@@ -10,7 +10,6 @@ import Animated, {
   interpolate,
   type SharedValue,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/theme";
 
 interface CountdownTimerProps {
@@ -32,7 +31,6 @@ export function CountdownTimer({
     const interval = setInterval(() => {
       const r = getRemainingTime(targetTime);
       setRemaining(r);
-      // Bump scale on each tick
       digitScale.value = withSequence(
         withTiming(1.08, { duration: 100 }),
         withTiming(1, { duration: 200 })
@@ -64,15 +62,23 @@ export function CountdownTimer({
   }));
 
   return (
-    <View className="items-center">
+    <View style={{ alignItems: "center" }}>
       {label && (
         <Text className="text-white/50 text-xs mb-1 font-mono">{label}</Text>
       )}
-      <Animated.View className="flex-row items-center gap-1" style={scaleStyle}>
+      <Animated.View
+        style={[
+          { flexDirection: "row", alignItems: "center", gap: 4 },
+          scaleStyle,
+        ]}
+      >
         <TimeBlock value={remaining.minutes} isUrgent={isUrgent} urgentPulse={urgentPulse} />
         <Text
-          style={{ color: isUrgent ? Colors.rug : Colors.white }}
-          className="text-xl font-bold"
+          style={{
+            color: isUrgent ? Colors.rug : Colors.white,
+            fontSize: 20,
+            fontWeight: "bold",
+          }}
         >
           :
         </Text>
@@ -99,12 +105,24 @@ function TimeBlock({
 
   return (
     <Animated.View
-      className="rounded-md px-2 py-1 min-w-[36px] items-center"
-      style={animatedStyle}
+      style={[
+        {
+          borderRadius: 6,
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          minWidth: 36,
+          alignItems: "center",
+        },
+        animatedStyle,
+      ]}
     >
       <Text
-        className="text-xl font-bold font-mono"
-        style={{ color: isUrgent ? Colors.rug : Colors.white }}
+        style={{
+          fontSize: 20,
+          fontWeight: "bold",
+          fontFamily: "SpaceMono",
+          color: isUrgent ? Colors.rug : Colors.white,
+        }}
       >
         {String(value).padStart(2, "0")}
       </Text>

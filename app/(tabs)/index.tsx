@@ -14,10 +14,11 @@ import { useStore } from "@/lib/store";
 import { RoundCard } from "@/components/RoundCard";
 import { BetSheet } from "@/components/BetSheet";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
+import { SkeletonRoundCard } from "@/components/SkeletonRoundCard";
 import type { BetSide, Token } from "@/lib/types";
 
 export default function HomeScreen() {
-  const { rounds, loadRounds, user, placeBet, walletConnected, connectWallet } =
+  const { rounds, loadRounds, user, placeBet, walletConnected, connectWallet, loading } =
     useStore();
   const [refreshing, setRefreshing] = useState(false);
   const [betToken, setBetToken] = useState<Token | null>(null);
@@ -139,6 +140,14 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Loading skeletons */}
+        {loading && rounds.length === 0 && (
+          <View className="mt-2">
+            <SkeletonRoundCard />
+            <SkeletonRoundCard />
+          </View>
+        )}
+
         {/* Live round */}
         {openRound && (
           <View className="mb-2 mt-2">

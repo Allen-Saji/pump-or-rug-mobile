@@ -12,6 +12,7 @@ import { Colors, Gradients } from "@/constants/theme";
 import { useStore } from "@/lib/store";
 import { LeaderboardRow } from "@/components/LeaderboardRow";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
+import { SkeletonLeaderboardRow } from "@/components/SkeletonLeaderboardRow";
 import type { LeaderboardPeriod } from "@/lib/types";
 
 const periods: { key: LeaderboardPeriod; label: string }[] = [
@@ -22,7 +23,7 @@ const periods: { key: LeaderboardPeriod; label: string }[] = [
 ];
 
 export default function LeaderboardScreen() {
-  const { leaderboard, leaderboardPeriod, setLeaderboardPeriod } = useStore();
+  const { leaderboard, leaderboardPeriod, setLeaderboardPeriod, loading } = useStore();
 
   useEffect(() => {
     setLeaderboardPeriod("weekly");
@@ -90,6 +91,13 @@ export default function LeaderboardScreen() {
 
       {/* Leaderboard list */}
       <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+        {loading && leaderboard.length === 0 && (
+          <View className="mt-2">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <SkeletonLeaderboardRow key={i} />
+            ))}
+          </View>
+        )}
         {leaderboard.map((entry, i) => (
           <LeaderboardRow key={entry.userId} entry={entry} index={i} />
         ))}

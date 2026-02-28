@@ -9,6 +9,7 @@ import { AnimatedEntry } from "@/components/AnimatedEntry";
 import { StreakBanner } from "@/components/StreakBanner";
 import { ResultBadge } from "@/components/ResultBadge";
 import LottieView from "lottie-react-native";
+import { SkeletonProfile } from "@/components/SkeletonProfile";
 
 export default function ProfileScreen() {
   const { user, walletConnected, connectWallet } = useStore();
@@ -16,16 +17,10 @@ export default function ProfileScreen() {
   if (!user) {
     return (
       <SafeAreaView
-        className="flex-1 items-center justify-center"
+        className="flex-1"
         style={{ backgroundColor: Colors.dark }}
       >
-        <LottieView
-          source={require("@/assets/animations/loading-pulse.json")}
-          autoPlay
-          loop
-          style={{ width: 80, height: 80 }}
-        />
-        <Text className="text-white/50 font-mono mt-2">Loading...</Text>
+        <SkeletonProfile />
       </SafeAreaView>
     );
   }
