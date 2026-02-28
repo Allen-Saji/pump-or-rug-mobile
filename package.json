@@ -1,16 +1,49 @@
 {
-  "name": "pump-or-rug-mobile-contract-tests",
-  "version": "0.1.0",
+  "name": "pump-or-rug-mobile",
+  "version": "1.0.0",
   "private": true,
-  "type": "module",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "expo lint"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.3",
+    "@gorhom/bottom-sheet": "^5.0.6",
+    "@lottiefiles/dotlottie-react": "^0.13.5",
+    "@react-native-community/slider": "5.0.1",
+    "expo": "~54.0.0",
+    "expo-constants": "~18.0.13",
+    "expo-font": "~14.0.11",
+    "expo-haptics": "~15.0.8",
+    "expo-linear-gradient": "~15.0.8",
+    "expo-linking": "~8.0.11",
+    "expo-router": "~6.0.23",
+    "expo-status-bar": "~3.0.9",
+    "expo-system-ui": "~6.0.9",
+    "lottie-react-native": "~7.3.1",
+    "nativewind": "^4.1.23",
+    "phosphor-react-native": "^2.2.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-web": "^0.21.0",
+    "react-native-worklets": "0.5.1",
+    "tailwindcss": "^3.4.17",
+    "zustand": "^5.0.0"
+  },
   "devDependencies": {
-    "@coral-xyz/anchor": "^0.32.1",
-    "@types/bn.js": "^5.2.0",
-    "@types/chai": "^4.3.20",
-    "@types/mocha": "^10.0.10",
-    "chai": "^4.5.0",
-    "mocha": "^10.8.2",
-    "ts-mocha": "^10.1.0",
-    "typescript": "^5.9.2"
-  }
+    "@babel/core": "^7.25.0",
+    "@types/react": "~19.1.10",
+    "puppeteer-core": "^24.37.5",
+    "typescript": "~5.9.2"
+  },
+  "packageManager": "yarn@4.9.2+sha512.1fc009bc09d13cfd0e19efa44cbfc2b9cf6ca61482725eb35bbc5e257e093ebf4130db6dfe15d604ff4b79efd8e1e8e99b25fa7d0a6197c9f9826358d4d65c3c"
 }

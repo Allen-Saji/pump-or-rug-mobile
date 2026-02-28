@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Pump or Rug",
+    "slug": "pump-or-rug",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "pumporrug",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0A0A0A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.pumporrug.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0A0A"
+      },
+      "package": "com.pumporrug.app"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
