@@ -2,6 +2,7 @@
   "name": "pump-or-rug-mobile-contract-tests",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "devDependencies": {
     "@coral-xyz/anchor": "^0.32.1",
     "@types/bn.js": "^5.2.0",
