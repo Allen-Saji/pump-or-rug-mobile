@@ -1,23 +1,13 @@
 import { create } from "zustand";
-import type { User, Bet, Round, LeaderboardEntry, LeaderboardPeriod } from "./types";
+import type { Bet, Round, LeaderboardEntry, LeaderboardPeriod } from "./types";
 import {
   fetchRounds,
   fetchRound,
   fetchLeaderboard,
-  fetchUser,
   placeBet as mockPlaceBet,
 } from "./mock-data";
 
 interface AppState {
-  // Wallet
-  walletConnected: boolean;
-  connectWallet: () => void;
-  disconnectWallet: () => void;
-
-  // User
-  user: User | null;
-  loadUser: () => Promise<void>;
-
   // Rounds
   rounds: Round[];
   currentRound: Round | null;
@@ -30,6 +20,7 @@ interface AppState {
   setLeaderboardPeriod: (period: LeaderboardPeriod) => Promise<void>;
 
   // Betting
+  userBets: Bet[];
   placeBet: (
     roundId: string,
     tokenId: string,
@@ -42,18 +33,6 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set, get) => ({
-  // Wallet
-  walletConnected: false,
-  connectWallet: () => set({ walletConnected: true }),
-  disconnectWallet: () => set({ walletConnected: false }),
-
-  // User
-  user: null,
-  loadUser: async () => {
-    const user = await fetchUser();
-    set({ user });
-  },
-
   // Rounds
   rounds: [],
   currentRound: null,
@@ -78,19 +57,10 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // Betting
+  userBets: [],
   placeBet: async (roundId, tokenId, side, amount) => {
     const bet = await mockPlaceBet(roundId, tokenId, side, amount);
-    const user = get().user;
-    if (user) {
-      set({
-        user: {
-          ...user,
-          bets: [bet, ...user.bets],
-          totalBets: user.totalBets + 1,
-          points: user.points + Math.round(amount * 100),
-        },
-      });
-    }
+    set({ userBets: [bet, ...get().userBets] });
     return bet;
   },
 
