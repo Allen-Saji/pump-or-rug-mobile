@@ -1,18 +1,14 @@
 import "../global.css";
-import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useStore } from "@/lib/store";
+import { PrivyProvider } from "@privy-io/expo";
+
+const PRIVY_APP_ID = process.env.EXPO_PUBLIC_PRIVY_APP_ID ?? "";
+const PRIVY_CLIENT_ID = process.env.EXPO_PUBLIC_PRIVY_CLIENT_ID ?? "";
 
 export default function RootLayout() {
-  const loadUser = useStore((s) => s.loadUser);
-
-  useEffect(() => {
-    loadUser();
-  }, []);
-
   return (
-    <>
+    <PrivyProvider appId={PRIVY_APP_ID} clientId={PRIVY_CLIENT_ID}>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -21,6 +17,6 @@ export default function RootLayout() {
           animation: "slide_from_right",
         }}
       />
-    </>
+    </PrivyProvider>
   );
 }
