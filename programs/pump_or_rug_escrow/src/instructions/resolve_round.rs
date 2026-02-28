@@ -36,6 +36,9 @@ pub fn handler_resolve(
 
     let caller = ctx.accounts.resolver.key();
     let cfg = &ctx.accounts.global_config;
+    // H3 note: resolver trust assumption — the resolver can see pool state
+    // before choosing an outcome. Production deployments should use an external
+    // oracle or commit-reveal scheme to prevent front-running.
     require!(
         caller == cfg.admin || caller == cfg.resolver,
         PumpOrRugError::Unauthorized
@@ -59,6 +62,9 @@ pub fn handler_resolve(
     Ok(())
 }
 
+// M2 note: cancel has no time guard by design — it is an emergency admin action.
+// The admin/resolver can cancel at any time while the round is Open, voiding all
+// bets (users get full refunds via claim). This is an admin trust assumption.
 pub fn handler_cancel(ctx: Context<ResolveRound>, _round_id: u64) -> Result<()> {
     require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
 

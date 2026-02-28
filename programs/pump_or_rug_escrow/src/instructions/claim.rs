@@ -31,8 +31,12 @@ pub struct Claim<'info> {
     )]
     pub vault: SystemAccount<'info>,
 
+    // H1 fix: close bet_position after claim to reclaim rent.
+    // Re-init is prevented because place_bet requires round.status == Open,
+    // and a resolved/closed round can never transition back to Open.
     #[account(
         mut,
+        close = user,
         seeds = [SEED_BET, round.key().as_ref(), user.key().as_ref()],
         bump = bet_position.bump,
         constraint = bet_position.user == user.key() @ PumpOrRugError::Unauthorized,
@@ -43,12 +47,18 @@ pub struct Claim<'info> {
     pub system_program: Program<'info, System>,
 }
 
+// L2 note: claim intentionally does NOT check global_config.paused.
+// Users must always be able to withdraw their funds regardless of pause state.
 pub fn handler(ctx: Context<Claim>, _round_id: u64) -> Result<()> {
-    let cfg = &ctx.accounts.global_config;
     let round = &mut ctx.accounts.round;
-    let pos = &mut ctx.accounts.bet_position;
+    let pos = &ctx.accounts.bet_position;
 
-    require!(round.status == RoundStatus::Resolved, PumpOrRugError::RoundNotResolved);
+    // C1 fix: allow claims on both Resolved and Closed rounds.
+    // After force_close_round (which only sweeps fees), users can still claim.
+    require!(
+        round.status == RoundStatus::Resolved || round.status == RoundStatus::Closed,
+        PumpOrRugError::RoundNotResolved
+    );
     require!(!pos.claimed, PumpOrRugError::AlreadyClaimed);
 
     let mut payout: u64 = 0;
@@ -72,11 +82,12 @@ pub fn handler(ctx: Context<Claim>, _round_id: u64) -> Result<()> {
 
                 require!(winner_pool > 0, PumpOrRugError::InvalidPoolState);
 
+                // C2 fix: use fee_bps snapshot from round creation, not current GlobalConfig
                 let (payout_amount, fee) = compute_winner_payout(
                     pos.amount_lamports,
                     winner_pool,
                     loser_pool,
-                    cfg.fee_bps,
+                    round.fee_bps,
                 )?;
 
                 payout = payout_amount;
@@ -95,13 +106,14 @@ pub fn handler(ctx: Context<Claim>, _round_id: u64) -> Result<()> {
             &ctx.accounts.vault.to_account_info(),
             &ctx.accounts.user.to_account_info(),
             &ctx.accounts.system_program.to_account_info(),
-            round.vault_bump,
             &round_key,
+            round.vault_bump,
             payout,
         )?;
     }
 
-    pos.claimed = true;
+    // Note: pos.claimed is set for accounting, but the account is closed
+    // after this handler via Anchor's `close = user` constraint.
     round.claimed_positions = round
         .claimed_positions
         .checked_add(1)

@@ -15,6 +15,7 @@ pub struct Round {
     pub fees_collected_lamports: u64,
     pub total_positions: u32,
     pub claimed_positions: u32,
+    pub fee_bps: u16, // snapshot from GlobalConfig at creation (C2 fix)
     pub bump: u8,
     pub vault_bump: u8,
 }
@@ -24,7 +25,7 @@ pub enum RoundStatus {
     Open,
     Resolved,
     Closed,
-    Cancelled,
+    // M1: removed dead `Cancelled` variant (was never assigned)
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, InitSpace, PartialEq, Eq)]

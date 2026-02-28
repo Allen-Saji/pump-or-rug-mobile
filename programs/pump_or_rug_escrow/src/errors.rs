@@ -36,4 +36,6 @@ pub enum PumpOrRugError {
     InvalidGracePeriod,
     #[msg("Grace period not elapsed")]
     GracePeriodNotElapsed,
+    #[msg("Bet amount below minimum")]
+    MinBetNotMet,
 }

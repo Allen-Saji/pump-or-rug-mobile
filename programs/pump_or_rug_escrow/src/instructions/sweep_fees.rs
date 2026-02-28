@@ -46,7 +46,11 @@ pub fn handler(ctx: Context<SweepFees>, _round_id: u64) -> Result<()> {
     require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
 
     let round = &mut ctx.accounts.round;
-    require!(round.status == RoundStatus::Resolved, PumpOrRugError::RoundNotResolved);
+    // Allow sweeping on both Resolved and Closed rounds (after force_close)
+    require!(
+        round.status == RoundStatus::Resolved || round.status == RoundStatus::Closed,
+        PumpOrRugError::RoundNotResolved
+    );
 
     let amount = round.fees_collected_lamports;
     require!(amount > 0, PumpOrRugError::NothingToSweep);
@@ -56,8 +60,8 @@ pub fn handler(ctx: Context<SweepFees>, _round_id: u64) -> Result<()> {
         &ctx.accounts.vault.to_account_info(),
         &ctx.accounts.treasury.to_account_info(),
         &ctx.accounts.system_program.to_account_info(),
-        round.vault_bump,
         &round_key,
+        round.vault_bump,
         amount,
     )?;
 

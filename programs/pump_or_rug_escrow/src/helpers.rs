@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 use crate::errors::PumpOrRugError;
+use crate::constants::SEED_VAULT;
 
 pub fn compute_winner_payout(
     user_stake: u64,
@@ -10,17 +11,25 @@ pub fn compute_winner_payout(
 ) -> Result<(u64, u64)> {
     require!(winner_pool > 0, PumpOrRugError::InvalidPoolState);
 
-    let profit_share = ((loser_pool as u128)
+    let profit_share_u128 = (loser_pool as u128)
         .checked_mul(user_stake as u128)
-        .ok_or(PumpOrRugError::MathOverflow)?)
+        .ok_or(PumpOrRugError::MathOverflow)?
         .checked_div(winner_pool as u128)
-        .ok_or(PumpOrRugError::MathOverflow)? as u64;
+        .ok_or(PumpOrRugError::MathOverflow)?;
 
-    let fee = ((profit_share as u128)
+    // C3 fix: guarded u128→u64 cast (safe because profit_share <= loser_pool,
+    // but defense-in-depth against future changes)
+    let profit_share = u64::try_from(profit_share_u128)
+        .map_err(|_| error!(PumpOrRugError::MathOverflow))?;
+
+    let fee_u128 = (profit_share as u128)
         .checked_mul(fee_bps as u128)
-        .ok_or(PumpOrRugError::MathOverflow)?)
+        .ok_or(PumpOrRugError::MathOverflow)?
         .checked_div(10_000)
-        .ok_or(PumpOrRugError::MathOverflow)? as u64;
+        .ok_or(PumpOrRugError::MathOverflow)?;
+
+    let fee = u64::try_from(fee_u128)
+        .map_err(|_| error!(PumpOrRugError::MathOverflow))?;
 
     let net_profit = profit_share
         .checked_sub(fee)
@@ -35,19 +44,19 @@ pub fn compute_winner_payout(
 
 pub fn transfer_from_vault<'info>(
     vault: &AccountInfo<'info>,
-    destination: &AccountInfo<'info>,
+    to: &AccountInfo<'info>,
     system_program: &AccountInfo<'info>,
-    vault_bump: u8,
     round_key: &Pubkey,
+    vault_bump: u8,
     amount: u64,
 ) -> Result<()> {
-    let signer_seeds: &[&[u8]] = &[b"vault", round_key.as_ref(), &[vault_bump]];
+    let signer_seeds: &[&[u8]] = &[SEED_VAULT, round_key.as_ref(), &[vault_bump]];
     transfer(
         CpiContext::new_with_signer(
             system_program.clone(),
             Transfer {
                 from: vault.clone(),
-                to: destination.clone(),
+                to: to.clone(),
             },
             &[signer_seeds],
         ),

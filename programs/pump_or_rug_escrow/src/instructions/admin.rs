@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use crate::constants::*;
 use crate::errors::PumpOrRugError;
-use crate::events::{ResolverUpdated, TreasuryUpdated, FeeUpdated, PauseUpdated};
+use crate::events::{AdminTransferred, ResolverUpdated, TreasuryUpdated, FeeUpdated, PauseUpdated};
 use crate::state::GlobalConfig;
 
 #[derive(Accounts)]
@@ -15,6 +15,16 @@ pub struct AdminOnly<'info> {
         has_one = admin @ PumpOrRugError::Unauthorized,
     )]
     pub global_config: Account<'info, GlobalConfig>,
+}
+
+// L1 fix: admin rotation to prevent permanent lockout if key is compromised
+pub fn handler_set_admin(ctx: Context<AdminOnly>, new_admin: Pubkey) -> Result<()> {
+    require!(new_admin != Pubkey::default(), PumpOrRugError::Unauthorized);
+    let cfg = &mut ctx.accounts.global_config;
+    let old_admin = cfg.admin;
+    cfg.admin = new_admin;
+    emit!(AdminTransferred { old_admin, new_admin });
+    Ok(())
 }
 
 pub fn handler_set_resolver(ctx: Context<AdminOnly>, new_resolver: Pubkey) -> Result<()> {

@@ -77,7 +77,7 @@ describe("pump_or_rug_escrow e2e", () => {
     expect(cfg.paused).eq(false);
   });
 
-  it("creates round, places bets, resolves, claims, sweeps", async () => {
+  it("creates round, places bets, resolves, claims, sweeps, closes", async () => {
     const now = Math.floor(Date.now() / 1000);
     const openTs = new BN(now - 5);
     const closeTs = new BN(now + 10);
@@ -94,6 +94,10 @@ describe("pump_or_rug_escrow e2e", () => {
       })
       .signers([admin])
       .rpc();
+
+    // C2 verify: fee_bps is snapshotted on the round
+    let round = await program.account.round.fetch(roundPda);
+    expect(round.feeBps).eq(500);
 
     // 1 SOL pump (bettorA), 1 SOL rug (bettorB)
     await program.methods
@@ -122,7 +126,7 @@ describe("pump_or_rug_escrow e2e", () => {
       .signers([bettorB])
       .rpc();
 
-    let round = await program.account.round.fetch(roundPda);
+    round = await program.account.round.fetch(roundPda);
     expect(round.totalPoolLamports.toNumber()).eq(2 * LAMPORTS_PER_SOL);
     expect(round.totalPumpLamports.toNumber()).eq(1 * LAMPORTS_PER_SOL);
     expect(round.totalRugLamports.toNumber()).eq(1 * LAMPORTS_PER_SOL);
@@ -168,8 +172,15 @@ describe("pump_or_rug_escrow e2e", () => {
       .signers([bettorB])
       .rpc();
 
+    // H1 verify: bet_position accounts are closed after claim (rent reclaimed)
+    const betAAfterClaim = await program.account.betPosition.fetchNullable(betAPda);
+    expect(betAAfterClaim).to.be.null;
+    const betBAfterClaim = await program.account.betPosition.fetchNullable(betBPda);
+    expect(betBAfterClaim).to.be.null;
+
     round = await program.account.round.fetch(roundPda);
-    expect(round.feesCollectedLamports.toNumber()).eq(50_000_000); // 5% of 1 SOL loser side profit distribution
+    expect(round.feesCollectedLamports.toNumber()).eq(50_000_000); // 5% of 1 SOL loser side profit
+    expect(round.claimedPositions).eq(round.totalPositions);
 
     // sweep fees
     await program.methods
@@ -188,13 +199,7 @@ describe("pump_or_rug_escrow e2e", () => {
     round = await program.account.round.fetch(roundPda);
     expect(round.feesCollectedLamports.toNumber()).eq(0);
 
-    const betA = await program.account.betPosition.fetch(betAPda);
-    const betB = await program.account.betPosition.fetch(betBPda);
-    expect(betA.claimed).eq(true);
-    expect(betB.claimed).eq(true);
-    expect(round.claimedPositions).eq(round.totalPositions);
-
-    // close round (sweep any residual dust to treasury)
+    // H2 verify: close_round closes the Round account (rent reclaimed)
     await program.methods
       .closeRound(roundId)
       .accounts({
@@ -208,11 +213,11 @@ describe("pump_or_rug_escrow e2e", () => {
       .signers([admin])
       .rpc();
 
-    round = await program.account.round.fetch(roundPda);
-    expect(round.status).to.have.property("closed");
+    const closedRound = await program.account.round.fetchNullable(roundPda);
+    expect(closedRound).to.be.null;
   });
 
-  it("can cancel and force-close unresolved claims after grace", async () => {
+  it("can cancel and force-close, users still claim after force-close", async () => {
     const round2 = new BN(Date.now() + 7777);
     const [round2Pda] = PublicKey.findProgramAddressSync(
       [Buffer.from("round"), round2.toArrayLike(Buffer, "le", 8)],
@@ -271,7 +276,7 @@ describe("pump_or_rug_escrow e2e", () => {
     // wait until settle timestamp passes
     await sleep(2500);
 
-    // force close with grace=0 (simulates post-deadline cleanup)
+    // C1 fix: force close only sweeps fees (none here), users can still claim
     await program.methods
       .forceCloseRound(round2, new BN(0))
       .accounts({
@@ -285,8 +290,76 @@ describe("pump_or_rug_escrow e2e", () => {
       .signers([admin])
       .rpc();
 
-    const round2Acc = await program.account.round.fetch(round2Pda);
+    let round2Acc = await program.account.round.fetch(round2Pda);
     expect(round2Acc.status).to.have.property("closed");
+
+    // C1 verify: user can STILL claim after force_close (Void = full refund)
+    const balBefore = await provider.connection.getBalance(bettorA.publicKey);
+
+    await program.methods
+      .claim(round2)
+      .accounts({
+        user: bettorA.publicKey,
+        globalConfig: globalConfigPda,
+        round: round2Pda,
+        vault: vault2Pda,
+        betPosition: bet2APda,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([bettorA])
+      .rpc();
+
+    const balAfter = await provider.connection.getBalance(bettorA.publicKey);
+    // User gets back ~0.5 SOL bet + bet_position rent, minus tx fee
+    expect(balAfter).to.be.greaterThan(balBefore + 0.49 * LAMPORTS_PER_SOL);
+
+    // Now admin can close_round (all claimed) to reclaim Round rent
+    await program.methods
+      .closeRound(round2)
+      .accounts({
+        admin: admin.publicKey,
+        globalConfig: globalConfigPda,
+        round: round2Pda,
+        vault: vault2Pda,
+        treasury: treasury.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([admin])
+      .rpc();
+
+    const closedRound2 = await program.account.round.fetchNullable(round2Pda);
+    expect(closedRound2).to.be.null;
   });
 
+  it("L1: admin can transfer admin role", async () => {
+    const newAdmin = Keypair.generate();
+    const sig = await provider.connection.requestAirdrop(newAdmin.publicKey, 1 * LAMPORTS_PER_SOL);
+    await provider.connection.confirmTransaction(sig, "confirmed");
+
+    // Transfer admin to newAdmin
+    await program.methods
+      .setAdmin(newAdmin.publicKey)
+      .accounts({
+        admin: admin.publicKey,
+        globalConfig: globalConfigPda,
+      })
+      .signers([admin])
+      .rpc();
+
+    let cfg = await program.account.globalConfig.fetch(globalConfigPda);
+    expect(cfg.admin.toBase58()).eq(newAdmin.publicKey.toBase58());
+
+    // Transfer back so other tests still work if needed
+    await program.methods
+      .setAdmin(admin.publicKey)
+      .accounts({
+        admin: newAdmin.publicKey,
+        globalConfig: globalConfigPda,
+      })
+      .signers([newAdmin])
+      .rpc();
+
+    cfg = await program.account.globalConfig.fetch(globalConfigPda);
+    expect(cfg.admin.toBase58()).eq(admin.publicKey.toBase58());
+  });
 });

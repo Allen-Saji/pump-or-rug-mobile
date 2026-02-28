@@ -9,6 +9,12 @@ pub struct ConfigInitialized {
 }
 
 #[event]
+pub struct AdminTransferred {
+    pub old_admin: Pubkey,
+    pub new_admin: Pubkey,
+}
+
+#[event]
 pub struct ResolverUpdated {
     pub resolver: Pubkey,
 }
@@ -78,6 +84,6 @@ pub struct RoundClosed {
 #[event]
 pub struct RoundForceClosed {
     pub round: Pubkey,
-    pub residual_swept_lamports: u64,
+    pub fees_swept_lamports: u64,
     pub grace_seconds: i64,
 }

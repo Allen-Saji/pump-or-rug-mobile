@@ -49,7 +49,8 @@ pub fn handler(
     let now = Clock::get()?.unix_timestamp;
     require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
     require!(open_ts < close_ts && close_ts < settle_ts, PumpOrRugError::InvalidRoundWindow);
-    require!(settle_ts > now, PumpOrRugError::InvalidRoundWindow);
+    // M3 fix: betting window must still be open at creation time
+    require!(close_ts > now, PumpOrRugError::InvalidRoundWindow);
 
     let round = &mut ctx.accounts.round;
     round.round_id = round_id;
@@ -64,28 +65,52 @@ pub fn handler(
     round.fees_collected_lamports = 0;
     round.total_positions = 0;
     round.claimed_positions = 0;
+    // C2 fix: snapshot fee at round creation so admin can't change it retroactively
+    round.fee_bps = ctx.accounts.global_config.fee_bps;
     round.bump = ctx.bumps.round;
     round.vault_bump = ctx.bumps.vault;
 
-    // Create the vault PDA as a 0-data system account.
-    if ctx.accounts.vault.data_is_empty() {
+    // M1 fix: use transfer + allocate + assign instead of create_account.
+    // create_account fails if the vault PDA was pre-funded (griefing vector).
+    // This approach handles both fresh and pre-funded vault PDAs.
+    {
         let rent_lamports = Rent::get()?.minimum_balance(0);
-        let ix = system_instruction::create_account(
-            &ctx.accounts.admin.key(),
-            &ctx.accounts.vault.key(),
-            rent_lamports,
-            0,
-            &anchor_lang::solana_program::system_program::ID,
-        );
+        let vault_info = ctx.accounts.vault.to_account_info();
+        let current_lamports = vault_info.lamports();
+
+        // Top up to rent-exempt if needed
+        if current_lamports < rent_lamports {
+            let needed = rent_lamports
+                .checked_sub(current_lamports)
+                .ok_or(PumpOrRugError::MathOverflow)?;
+            anchor_lang::system_program::transfer(
+                CpiContext::new(
+                    ctx.accounts.system_program.to_account_info(),
+                    anchor_lang::system_program::Transfer {
+                        from: ctx.accounts.admin.to_account_info(),
+                        to: vault_info.clone(),
+                    },
+                ),
+                needed,
+            )?;
+        }
+
+        // Allocate 0 bytes + assign to system program (idempotent for pre-funded PDAs)
         let round_key = round.key();
         let vault_signer: &[&[u8]] = &[SEED_VAULT, round_key.as_ref(), &[round.vault_bump]];
+
         invoke_signed(
-            &ix,
-            &[
-                ctx.accounts.admin.to_account_info(),
-                ctx.accounts.vault.to_account_info(),
-                ctx.accounts.system_program.to_account_info(),
-            ],
+            &system_instruction::allocate(&ctx.accounts.vault.key(), 0),
+            &[vault_info.clone()],
+            &[vault_signer],
+        )?;
+
+        invoke_signed(
+            &system_instruction::assign(
+                &ctx.accounts.vault.key(),
+                &anchor_lang::solana_program::system_program::ID,
+            ),
+            &[vault_info],
             &[vault_signer],
         )?;
     }

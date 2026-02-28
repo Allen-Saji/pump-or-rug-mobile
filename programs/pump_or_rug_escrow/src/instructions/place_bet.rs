@@ -49,7 +49,8 @@ pub fn handler(
     side: BetSide,
     amount_lamports: u64,
 ) -> Result<()> {
-    require!(amount_lamports > 0, PumpOrRugError::InvalidAmount);
+    // M4 fix: enforce minimum bet to prevent dust spam
+    require!(amount_lamports >= MIN_BET_LAMPORTS, PumpOrRugError::MinBetNotMet);
     require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
 
     let now = Clock::get()?.unix_timestamp;

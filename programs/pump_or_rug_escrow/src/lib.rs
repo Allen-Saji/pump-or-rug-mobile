@@ -22,6 +22,10 @@ pub mod pump_or_rug_escrow {
         instructions::initialize_config::handler(ctx, fee_bps)
     }
 
+    pub fn set_admin(ctx: Context<AdminOnly>, new_admin: Pubkey) -> Result<()> {
+        instructions::admin::handler_set_admin(ctx, new_admin)
+    }
+
     pub fn set_resolver(ctx: Context<AdminOnly>, new_resolver: Pubkey) -> Result<()> {
         instructions::admin::handler_set_resolver(ctx, new_resolver)
     }
@@ -82,7 +86,7 @@ pub mod pump_or_rug_escrow {
     }
 
     pub fn force_close_round(
-        ctx: Context<CloseRound>,
+        ctx: Context<ForceCloseRound>,
         round_id: u64,
         grace_seconds: i64,
     ) -> Result<()> {
