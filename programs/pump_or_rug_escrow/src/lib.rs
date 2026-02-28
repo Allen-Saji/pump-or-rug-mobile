@@ -18,18 +18,26 @@ pub mod pump_or_rug_escrow {
         cfg.fee_bps = fee_bps;
         cfg.paused = false;
         cfg.bump = ctx.bumps.global_config;
+
+        emit!(ConfigInitialized {
+            admin: cfg.admin,
+            treasury: cfg.treasury,
+            fee_bps: cfg.fee_bps,
+        });
         Ok(())
     }
 
     pub fn set_resolver(ctx: Context<AdminOnly>, new_resolver: Pubkey) -> Result<()> {
         let cfg = &mut ctx.accounts.global_config;
         cfg.resolver = new_resolver;
+        emit!(ResolverUpdated { resolver: new_resolver });
         Ok(())
     }
 
     pub fn set_treasury(ctx: Context<AdminOnly>, new_treasury: Pubkey) -> Result<()> {
         let cfg = &mut ctx.accounts.global_config;
         cfg.treasury = new_treasury;
+        emit!(TreasuryUpdated { treasury: new_treasury });
         Ok(())
     }
 
@@ -37,12 +45,14 @@ pub mod pump_or_rug_escrow {
         require!(fee_bps <= 1_000, PumpOrRugError::FeeTooHigh);
         let cfg = &mut ctx.accounts.global_config;
         cfg.fee_bps = fee_bps;
+        emit!(FeeUpdated { fee_bps });
         Ok(())
     }
 
     pub fn set_paused(ctx: Context<AdminOnly>, paused: bool) -> Result<()> {
         let cfg = &mut ctx.accounts.global_config;
         cfg.paused = paused;
+        emit!(PauseUpdated { paused });
         Ok(())
     }
 
@@ -96,6 +106,14 @@ pub mod pump_or_rug_escrow {
                 &[vault_signer],
             )?;
         }
+
+        emit!(RoundCreated {
+            round: round.key(),
+            round_id,
+            open_ts,
+            close_ts,
+            settle_ts,
+        });
 
         Ok(())
     }
@@ -159,6 +177,13 @@ pub mod pump_or_rug_escrow {
             .checked_add(1)
             .ok_or(PumpOrRugError::MathOverflow)?;
 
+        emit!(BetPlaced {
+            round: round.key(),
+            user: ctx.accounts.bettor.key(),
+            side,
+            amount_lamports,
+        });
+
         Ok(())
     }
 
@@ -195,6 +220,7 @@ pub mod pump_or_rug_escrow {
 
         round.status = RoundStatus::Resolved;
         round.outcome = outcome;
+        emit!(RoundResolved { round: round.key(), outcome });
         Ok(())
     }
 
@@ -212,6 +238,7 @@ pub mod pump_or_rug_escrow {
         require!(round.status == RoundStatus::Open, PumpOrRugError::RoundNotOpen);
         round.status = RoundStatus::Resolved;
         round.outcome = RoundOutcome::Void;
+        emit!(RoundCancelled { round: round.key() });
         Ok(())
     }
 
@@ -282,6 +309,12 @@ pub mod pump_or_rug_escrow {
             .claimed_positions
             .checked_add(1)
             .ok_or(PumpOrRugError::MathOverflow)?;
+
+        emit!(Claimed {
+            round: round.key(),
+            user: ctx.accounts.user.key(),
+            payout_lamports: payout,
+        });
         Ok(())
     }
 
@@ -309,9 +342,53 @@ pub mod pump_or_rug_escrow {
         )?;
 
         round.fees_collected_lamports = 0;
+        emit!(FeesSwept { round: round.key(), amount_lamports: amount });
         Ok(())
     }
 
+
+
+    pub fn force_close_round(
+        ctx: Context<CloseRound>,
+        _round_id: u64,
+        grace_seconds: i64,
+    ) -> Result<()> {
+        require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
+        let now = Clock::get()?.unix_timestamp;
+
+        let round = &mut ctx.accounts.round;
+        require!(round.status == RoundStatus::Resolved, PumpOrRugError::RoundNotResolved);
+        require!(grace_seconds >= 0, PumpOrRugError::InvalidGracePeriod);
+        require!(
+            now >= round.settle_ts.saturating_add(grace_seconds),
+            PumpOrRugError::GracePeriodNotElapsed
+        );
+
+        let vault_balance = **ctx.accounts.vault.lamports.borrow();
+        if vault_balance > 0 {
+            let round_key = round.key();
+            let signer_seeds: &[&[u8]] = &[b"vault", round_key.as_ref(), &[round.vault_bump]];
+            transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.system_program.to_account_info(),
+                    Transfer {
+                        from: ctx.accounts.vault.to_account_info(),
+                        to: ctx.accounts.treasury.to_account_info(),
+                    },
+                    &[signer_seeds],
+                ),
+                vault_balance,
+            )?;
+        }
+
+        round.status = RoundStatus::Closed;
+        emit!(RoundForceClosed {
+            round: round.key(),
+            residual_swept_lamports: vault_balance,
+            grace_seconds,
+        });
+        Ok(())
+    }
     pub fn close_round(ctx: Context<CloseRound>, _round_id: u64) -> Result<()> {
         require!(!ctx.accounts.global_config.paused, PumpOrRugError::ProgramPaused);
 
@@ -340,6 +417,7 @@ pub mod pump_or_rug_escrow {
         }
 
         round.status = RoundStatus::Closed;
+        emit!(RoundClosed { round: round.key(), residual_swept_lamports: vault_balance });
         Ok(())
     }
 }
@@ -675,6 +753,87 @@ pub enum RoundOutcome {
     Void,
 }
 
+#[event]
+pub struct ConfigInitialized {
+    pub admin: Pubkey,
+    pub treasury: Pubkey,
+    pub fee_bps: u16,
+}
+
+#[event]
+pub struct ResolverUpdated {
+    pub resolver: Pubkey,
+}
+
+#[event]
+pub struct TreasuryUpdated {
+    pub treasury: Pubkey,
+}
+
+#[event]
+pub struct FeeUpdated {
+    pub fee_bps: u16,
+}
+
+#[event]
+pub struct PauseUpdated {
+    pub paused: bool,
+}
+
+#[event]
+pub struct RoundCreated {
+    pub round: Pubkey,
+    pub round_id: u64,
+    pub open_ts: i64,
+    pub close_ts: i64,
+    pub settle_ts: i64,
+}
+
+#[event]
+pub struct BetPlaced {
+    pub round: Pubkey,
+    pub user: Pubkey,
+    pub side: BetSide,
+    pub amount_lamports: u64,
+}
+
+#[event]
+pub struct RoundResolved {
+    pub round: Pubkey,
+    pub outcome: RoundOutcome,
+}
+
+#[event]
+pub struct RoundCancelled {
+    pub round: Pubkey,
+}
+
+#[event]
+pub struct Claimed {
+    pub round: Pubkey,
+    pub user: Pubkey,
+    pub payout_lamports: u64,
+}
+
+#[event]
+pub struct FeesSwept {
+    pub round: Pubkey,
+    pub amount_lamports: u64,
+}
+
+#[event]
+pub struct RoundClosed {
+    pub round: Pubkey,
+    pub residual_swept_lamports: u64,
+}
+
+#[event]
+pub struct RoundForceClosed {
+    pub round: Pubkey,
+    pub residual_swept_lamports: u64,
+    pub grace_seconds: i64,
+}
+
 #[error_code]
 pub enum PumpOrRugError {
     #[msg("Unauthorized")]
@@ -707,6 +866,10 @@ pub enum PumpOrRugError {
     NothingToSweep,
     #[msg("All positions must be claimed before closing")]
     ClaimsPending,
+    #[msg("Invalid grace period")]
+    InvalidGracePeriod,
+    #[msg("Grace period not elapsed")]
+    GracePeriodNotElapsed,
 }
 
 #[cfg(test)]

@@ -211,4 +211,82 @@ describe("pump_or_rug_escrow e2e", () => {
     round = await program.account.round.fetch(roundPda);
     expect(round.status).to.have.property("closed");
   });
+
+  it("can cancel and force-close unresolved claims after grace", async () => {
+    const round2 = new BN(Date.now() + 7777);
+    const [round2Pda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("round"), round2.toArrayLike(Buffer, "le", 8)],
+      program.programId
+    );
+    const [vault2Pda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), round2Pda.toBuffer()],
+      program.programId
+    );
+    const [bet2APda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bet"), round2Pda.toBuffer(), bettorA.publicKey.toBuffer()],
+      program.programId
+    );
+
+    const now = Math.floor(Date.now() / 1000);
+    const openTs = new BN(now - 5);
+    const closeTs = new BN(now + 1);
+    const settleTs = new BN(now + 2);
+
+    await program.methods
+      .createRound(round2, openTs, closeTs, settleTs)
+      .accounts({
+        admin: admin.publicKey,
+        globalConfig: globalConfigPda,
+        round: round2Pda,
+        vault: vault2Pda,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([admin])
+      .rpc();
+
+    await program.methods
+      .placeBet(round2, { pump: {} }, new BN(0.5 * LAMPORTS_PER_SOL))
+      .accounts({
+        bettor: bettorA.publicKey,
+        globalConfig: globalConfigPda,
+        round: round2Pda,
+        vault: vault2Pda,
+        betPosition: bet2APda,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([bettorA])
+      .rpc();
+
+    // emergency cancel to VOID
+    await program.methods
+      .cancelRound(round2)
+      .accounts({
+        resolver: admin.publicKey,
+        globalConfig: globalConfigPda,
+        round: round2Pda,
+      })
+      .signers([admin])
+      .rpc();
+
+    // wait until settle timestamp passes
+    await sleep(2500);
+
+    // force close with grace=0 (simulates post-deadline cleanup)
+    await program.methods
+      .forceCloseRound(round2, new BN(0))
+      .accounts({
+        admin: admin.publicKey,
+        globalConfig: globalConfigPda,
+        round: round2Pda,
+        vault: vault2Pda,
+        treasury: treasury.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([admin])
+      .rpc();
+
+    const round2Acc = await program.account.round.fetch(round2Pda);
+    expect(round2Acc.status).to.have.property("closed");
+  });
+
 });
