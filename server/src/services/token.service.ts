@@ -152,7 +152,7 @@ function mapPumpFunToCache(coin: PumpFunCoin, now: number): TokenCacheInsert {
     platform: "pump.fun",
     name: coin.name,
     ticker: coin.symbol,
-    imageUrl: coin.image_uri,
+    imageUrl: coin.image_uri ?? null,
     price,
     liquidity,
     marketCap: coin.usd_market_cap,
@@ -184,4 +184,22 @@ function mapBagsToCache(pool: BagsPool, now: number): TokenCacheInsert {
     fetchedAt: now,
     activityScore,
   };
+}
+
+/** Rewrite IPFS gateway URLs to Pinata's reliable gateway */
+function rewriteIpfsUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  // Match any IPFS gateway URL pattern
+  const match = url.match(
+    /(?:ipfs\.io|cf-ipfs\.com|cloudflare-ipfs\.com|dweb\.link)\/ipfs\/(.+)/
+  );
+  if (match) {
+    return `https://gateway.pinata.cloud/ipfs/${match[1]}`;
+  }
+  // Handle bafkrei... CID-only style URLs
+  const bafMatch = url.match(/\/ipfs\/(baf[a-z0-9]+)/i);
+  if (bafMatch) {
+    return `https://gateway.pinata.cloud/ipfs/${bafMatch[1]}`;
+  }
+  return url;
 }

@@ -1,8 +1,10 @@
-import { View, Text } from "react-native";
+import { useState } from "react";
+import { View, Text, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors, Gradients } from "@/constants/theme";
 import { PumpRugButton } from "./PumpRugButton";
 import { ResultBadge } from "./ResultBadge";
+import { proxyImageUrl } from "@/lib/utils";
 import type { Token } from "@/lib/types";
 
 interface TokenSlotProps {
@@ -20,6 +22,7 @@ const platformColors: Record<string, string> = {
 
 export function TokenSlot({ token, isOpen, onPump, onRug }: TokenSlotProps) {
   const platColor = platformColors[token.platform] ?? Colors.dark300;
+  const [imgError, setImgError] = useState(false);
 
   return (
     <LinearGradient
@@ -34,18 +37,27 @@ export function TokenSlot({ token, isOpen, onPump, onRug }: TokenSlotProps) {
     >
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center gap-2 flex-1">
-          {/* Token avatar with gradient ring */}
+          {/* Token avatar */}
           <View
-            className="w-9 h-9 rounded-full items-center justify-center"
+            className="w-9 h-9 rounded-full items-center justify-center overflow-hidden"
             style={{
               borderWidth: 2,
               borderColor: platColor + "60",
               backgroundColor: Colors.dark300,
             }}
           >
-            <Text className="text-white font-bold text-xs">
-              {token.ticker.replace("$", "").slice(0, 2)}
-            </Text>
+            {token.imageUrl && !imgError ? (
+              <Image
+                source={{ uri: proxyImageUrl(token.imageUrl) }}
+                className="w-full h-full"
+                resizeMode="cover"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <Text className="text-white font-bold text-xs">
+                {token.ticker.replace("$", "").slice(0, 2)}
+              </Text>
+            )}
           </View>
           <View className="flex-1">
             <Text

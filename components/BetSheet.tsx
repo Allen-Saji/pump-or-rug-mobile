@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Text, Pressable, Modal, TouchableOpacity } from "react-native";
+import { View, Text, Pressable, Modal, TouchableOpacity, Image } from "react-native";
 import Slider from "@react-native-community/slider";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import LottieView from "lottie-react-native";
 import { router } from "expo-router";
 import { Colors, Gradients, Glows } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
+import { proxyImageUrl } from "@/lib/utils";
 import type { BetSide, Token } from "@/lib/types";
 
 interface BetSheetProps {
@@ -105,12 +106,20 @@ export function BetSheet({
             {/* Header */}
             <View className="flex-row items-center gap-3 mb-4">
               <View
-                className="w-10 h-10 rounded-full items-center justify-center"
+                className="w-10 h-10 rounded-full items-center justify-center overflow-hidden"
                 style={{ backgroundColor: color + "20" }}
               >
-                <Text className="font-bold font-mono" style={{ color }}>
-                  {isPump ? "P" : "R"}
-                </Text>
+                {token.imageUrl ? (
+                  <Image
+                    source={{ uri: proxyImageUrl(token.imageUrl) }}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text className="font-bold font-mono" style={{ color }}>
+                    {isPump ? "P" : "R"}
+                  </Text>
+                )}
               </View>
               <View>
                 <Text className="text-white font-bold font-mono text-lg">
