@@ -65,7 +65,8 @@ export const tokenService = {
         // Age filter
         if (t.createdTimestamp) {
           const age = now - t.createdTimestamp;
-          if (age < TOKEN_MIN_AGE_MS || age > TOKEN_MAX_AGE_MS) return false;
+          if (age < TOKEN_MIN_AGE_MS) return false;
+          if (TOKEN_MAX_AGE_MS > 0 && age > TOKEN_MAX_AGE_MS) return false;
         }
         // Liquidity filter
         if ((t.liquidity ?? 0) < TOKEN_MIN_LIQUIDITY) return false;
