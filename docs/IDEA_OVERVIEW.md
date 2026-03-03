@@ -7,12 +7,10 @@ A mobile game where users predict whether fresh launchpad tokens will **PUMP** o
 Most launchpad activity is chaos. People want signal, fun, and competition.
 
 ## Core loop
-- Every hour, 4 token slots go live:
-  - 2 from **pump.fun**
-  - 2 from **bags.fm**
+- Every hour, 4 tokens drop from **pump.fun**
 - Users have 60 minutes to predict each token: `PUMP` or `RUG`
-- Stake per pick: **0.01–3 SOL**
-- Round settles after 6 hours
+- Stake per pick: **0.01–1 SOL**
+- Round settles at :05 the next hour
 - Leaderboards + streaks drive daily habit
 
 ## Mobile-first angle
@@ -21,8 +19,8 @@ Most launchpad activity is chaos. People want signal, fun, and competition.
 - Push notifications for round open + settlement
 
 ## Anti-manipulation by design
-- TWAP pricing with outlier filters — single trades can't distort outcomes
-- High liquidity + volume floors — gaming a round costs ~$10k+ (uneconomical)
+- Independent price oracle (Birdeye) — no self-reported prices
+- Liquidity floors + 24h cooldown — gaming a round is uneconomical
 - Hidden token selection + simultaneous prediction reveal — no front-running or herding
 - Variable staking with strict caps — supports conviction while limiting manipulation ROI
 

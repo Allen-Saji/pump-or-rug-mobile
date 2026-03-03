@@ -48,7 +48,7 @@ Rules:
 3. Comparison bars
    - Pump vs Rug thresholds visualized
 4. Timeline strip
-   - Hourly round -> 60 min pick window -> +6h settle
+   - Hourly round -> 60 min pick window -> settle at :05
 5. Token selection matrix
    - Show filters + why each exists
 
@@ -67,7 +67,7 @@ Rules:
 ## Section-by-section UX notes
 ### Hero
 - Headline example: "Call Pumps. Dodge Rugs. Climb the Board."
-- Subheadline must mention pump.fun + bags.fm
+- Subheadline must mention pump.fun
 
 ### Problem
 - Use 3 bullets max
@@ -83,7 +83,7 @@ Rules:
 
 ### Anti-manipulation
 - Display as trust checklist with check icons
-- Include: TWAP, liquidity floor, volume floor, source mismatch guard
+- Include: Birdeye oracle, liquidity floor, hidden selection, cooldown
 
 ### Mobile edge
 - Show mockup frame with thumb-zone optimized UI

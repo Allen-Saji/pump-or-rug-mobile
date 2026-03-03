@@ -12,11 +12,11 @@
 
 ## Day 3 — Data adapters
 - pump.fun adapter
-- bags.fm adapter
+- Birdeye price adapter
 - token eligibility + ranking logic
 
 ## Day 4 — Settlement engine
-- P0/P1 TWAP computation
+- P0/P1 price computation (Birdeye)
 - VOID/RUG/PUMP logic
 - points + streak updates
 
