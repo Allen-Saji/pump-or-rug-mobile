@@ -9,6 +9,7 @@ import { betsRoute } from "./routes/bets";
 import { leaderboardRoute } from "./routes/leaderboard";
 import { usersRoute } from "./routes/users";
 import { imagesRoute } from "./routes/images";
+import { solanaRoute } from "./routes/solana";
 import { startScheduler } from "./cron/scheduler";
 import { tokenService } from "./services/token.service";
 import { roundService } from "./services/round.service";
@@ -38,6 +39,7 @@ app.route("/api/bets", betsRoute);
 app.route("/api/leaderboard", leaderboardRoute);
 app.route("/api/users", usersRoute);
 app.route("/api/images", imagesRoute);
+app.route("/api/solana", solanaRoute);
 
 // Bootstrap
 async function bootstrap() {
@@ -61,7 +63,7 @@ async function bootstrap() {
   const current = roundService.getCurrentRound();
   if (!current) {
     console.log("[boot] No active round, generating...");
-    roundService.generateRound();
+    await roundService.generateRound();
   }
 
   // 4. Start cron scheduler
