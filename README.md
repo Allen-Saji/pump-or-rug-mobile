@@ -1,27 +1,103 @@
-# Pump or Rug Mobile
+# Pump or Rug
 
-Degen prediction game for Solana Mobile (Radiance / Monolith direction).
+A degen prediction game on Solana — bet whether a token will pump or rug within the hour. Mobile-first, on-chain escrow, real stakes.
 
-This repo currently contains the litepaper docs + implementation guide.
+## Monorepo Structure
 
-## Docs
-- `docs/IDEA_OVERVIEW.md` — simple concept + why it should exist
-- `docs/GAME_RULES_V1.md` — locked rules and settlement logic
-- `docs/TOKEN_SELECTION_V1.md` — how tokens are selected each hour
-- `docs/IMPLEMENTATION_GUIDE_7D.md` — 1-week execution plan (build now)
-- `docs/LITEPAPER_SITE_CONTENT.md` — copy structure for degen-litepaper website
+| Directory | Description |
+|-----------|-------------|
+| `app/` | Expo Router screens & navigation (React Native) |
+| `components/` | Shared UI components |
+| `lib/` | Client-side state, API client, types, hooks |
+| `server/` | Hono API server (Bun + Drizzle + SQLite) |
+| `shared/` | Shared types/schemas between client and server |
+| `programs/` | Anchor on-chain program (`pump_or_rug_escrow`) |
+| `litepaper/` | Litepaper static site |
+| `docs/` | Design docs, game rules, security audit, analysis scripts |
 
-## Goal
-Ship a mobile-first app and a fun degen-litepaper site that anyone can understand in 60 seconds.
+## Quick Start
 
-## On-chain status (Anchor 0.32.1)
-Implemented in `programs/pump_or_rug_escrow`:
-- initialize_config
-- admin controls: set_resolver, set_treasury, set_fee_bps, set_paused
-- create_round
-- place_bet (escrow transfer into vault PDA)
-- resolve_round
-- claim (refund/pro-rata payout with fee)
-- sweep_fees
+### Mobile App
 
-Security review notes: `SECURITY_AUDIT_V1.md`
+```bash
+yarn install
+yarn start          # Expo dev server
+```
+
+### Server
+
+```bash
+cp server/.env.example server/.env
+# Fill in your API keys
+
+cd server
+bun run db:migrate  # Set up SQLite database
+bun run dev         # Start dev server on :3000
+```
+
+### On-Chain Program
+
+```bash
+anchor build
+anchor test         # Runs localnet + TS e2e tests
+```
+
+## Tech Stack
+
+- **Mobile**: Expo 54, React Native, NativeWind (Tailwind), Zustand, Expo Router
+- **Auth**: Privy (Google + X OAuth, embedded wallets)
+- **Server**: Bun, Hono, Drizzle ORM, SQLite
+- **On-Chain**: Anchor 0.32, Solana (escrow PDA vaults)
+- **Shared**: Zod schemas between client/server
+
+## Environment Variables
+
+### Mobile (`.env`)
+
+| Variable | Description |
+|----------|-------------|
+| `EXPO_PUBLIC_PRIVY_APP_ID` | Privy application ID |
+| `EXPO_PUBLIC_PRIVY_CLIENT_ID` | Privy client ID |
+| `EXPO_PUBLIC_API_URL` | Server URL (default `http://localhost:3000`) |
+
+### Server (`server/.env`)
+
+| Variable | Description |
+|----------|-------------|
+| `PORT` | Server port (default `3000`) |
+| `DATABASE_URL` | SQLite path (default `./data/pump-or-rug.db`) |
+| `BAGS_API_KEY` | Bags.fm API key for token data |
+| `PRIVY_APP_ID` | Privy app ID for auth verification |
+| `PRIVY_VERIFICATION_KEY` | Privy JWT verification key |
+
+## Architecture
+
+```
+┌─────────────┐     ┌─────────────┐     ┌──────────────────┐
+│  Mobile App  │────▶│  Hono API   │────▶│  Solana Program  │
+│  (Expo/RN)   │     │  (Bun)      │     │  (Anchor)        │
+└─────────────┘     └──────┬──────┘     └──────────────────┘
+       │                   │
+       │ Privy Auth        │ SQLite
+       ▼                   ▼
+ ┌───────────┐      ┌───────────┐
+ │  Privy    │      │  Drizzle  │
+ │  (OAuth)  │      │  (ORM)    │
+ └───────────┘      └───────────┘
+```
+
+## On-Chain Program
+
+`pump_or_rug_escrow` manages the full betting lifecycle:
+
+- **initialize_config** — set up protocol admin, resolver, treasury, fee BPS
+- **create_round** — open a new betting round for a token
+- **place_bet** — escrow SOL into a PDA vault (pump or rug side)
+- **resolve_round** — resolver settles outcome after the window closes
+- **claim** — winners get pro-rata payout minus fees; losers/void get refunds
+- **sweep_fees** — admin withdraws accumulated protocol fees
+- **cancel_round** — void a round for full refunds
+- **close_round / force_close_round** — finalize round after all claims (or after grace period)
+- **Admin controls** — `set_resolver`, `set_treasury`, `set_fee_bps`, `set_paused`
+
+Security review: [`docs/SECURITY_AUDIT.md`](docs/SECURITY_AUDIT.md)
