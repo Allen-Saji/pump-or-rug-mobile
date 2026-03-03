@@ -35,8 +35,8 @@ export const betService = {
     }
 
     // Validate amount
-    if (amount <= 0 || amount > 10) {
-      throw new ValidationError("Bet amount must be between 0 and 10 SOL");
+    if (amount < 0.01 || amount > 1) {
+      throw new ValidationError("Bet amount must be between 0.01 and 1 SOL");
     }
 
     const bet = {

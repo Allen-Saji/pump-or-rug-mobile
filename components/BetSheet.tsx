@@ -167,7 +167,7 @@ export function BetSheet({
                   setAmount(Math.round(v * 100) / 100)
                 }
                 minimumValue={0.01}
-                maximumValue={3}
+                maximumValue={1}
                 step={0.01}
                 minimumTrackTintColor={color}
                 maximumTrackTintColor={Colors.dark300}

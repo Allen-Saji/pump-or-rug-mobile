@@ -10,7 +10,7 @@ const placeBetSchema = z.object({
   roundId: z.string().min(1),
   tokenId: z.string().min(1),
   side: z.enum(["pump", "rug"]),
-  amount: z.number().positive().max(10),
+  amount: z.number().min(0.01).max(1),
 });
 
 app.use("/*", authMiddleware);
