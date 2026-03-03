@@ -21,3 +21,13 @@ expo-env.d.ts
 # @end expo-cli
 
 .env
+
+# Server
+server/data/
+server/.env
+
+# Generated type refs
+nativewind-env.d.ts
+
+# Misc
+*.db
