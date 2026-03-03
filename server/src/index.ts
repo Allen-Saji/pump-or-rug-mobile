@@ -8,6 +8,7 @@ import { roundsRoute } from "./routes/rounds";
 import { betsRoute } from "./routes/bets";
 import { leaderboardRoute } from "./routes/leaderboard";
 import { usersRoute } from "./routes/users";
+import { imagesRoute } from "./routes/images";
 import { startScheduler } from "./cron/scheduler";
 import { tokenService } from "./services/token.service";
 import { roundService } from "./services/round.service";
@@ -36,6 +37,7 @@ app.route("/api/rounds", roundsRoute);
 app.route("/api/bets", betsRoute);
 app.route("/api/leaderboard", leaderboardRoute);
 app.route("/api/users", usersRoute);
+app.route("/api/images", imagesRoute);
 
 // Bootstrap
 async function bootstrap() {
