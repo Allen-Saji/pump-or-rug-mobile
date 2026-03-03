@@ -11,26 +11,25 @@ const fadeUp = {
 };
 
 const payouts = [
-  { val: "0.01–3", label: "SOL stake per pick", color: "text-accent" },
-  { val: "1.8x", label: "Win payout", color: "text-pump" },
+  { val: "0.01–1", label: "SOL stake per pick", color: "text-accent" },
+  { val: "1.85x", label: "Win payout", color: "text-pump" },
   { val: "0x", label: "Lose stake", color: "text-rug" },
   { val: "Refund", label: "VOID / NS", color: "text-muted" },
 ];
 
 const points = [
-  { val: "+10", label: "Correct pick", color: "text-pump" },
+  { val: "+5", label: "Correct pick", color: "text-pump" },
   { val: "-3", label: "Wrong pick", color: "text-rug" },
   { val: "0", label: "VOID / NS", color: "text-muted" },
-  { val: "+5", label: "3 of 4 bonus", color: "text-warn" },
-  { val: "+15", label: "Perfect round", color: "text-accent" },
+  { val: "2x", label: "Perfect round", color: "text-accent" },
+  { val: "+3", label: "Rug sniper (>25% drop)", color: "text-warn" },
 ];
 
 const winStreaks = [
-  { streak: "0–2", mult: "1.0x" },
-  { streak: "3", mult: "1.2x" },
-  { streak: "5", mult: "1.5x" },
-  { streak: "8", mult: "2.0x" },
-  { streak: "12+", mult: "2.5x" },
+  { streak: "1", mult: "+2 bonus" },
+  { streak: "3", mult: "+6 bonus" },
+  { streak: "5", mult: "+10 bonus" },
+  { streak: "10", mult: "+20 bonus" },
 ];
 
 const dailyStreaks = [
@@ -83,7 +82,7 @@ export default function Scoring() {
             ))}
           </div>
           <p className="text-muted/60 text-xs mt-3 font-mono">
-            5% rake on winnings only → funds prize pool + ops. Effective win = 1.76x stake.
+            Win = 1.85x stake returned. Lose = stake gone. VOID/NS = full refund.
           </p>
         </motion.div>
 
@@ -109,7 +108,7 @@ export default function Scoring() {
           <div className="mt-4">
             <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-accent/20 bg-surface/50">
               <span className="font-mono text-sm text-muted">Break-even accuracy:</span>
-              <span className="font-mono text-lg text-accent font-bold">23.1%</span>
+              <span className="font-mono text-lg text-accent font-bold">37.5%</span>
             </div>
           </div>
         </motion.div>
@@ -124,17 +123,17 @@ export default function Scoring() {
           <div className="grid sm:grid-cols-2 gap-4">
             {/* Win streak table */}
             <div className="rounded-2xl border border-white/[0.04] bg-surfaceElevated p-5">
-              <h4 className="font-heading font-bold text-sm mb-3">Win Streak → Point Multiplier</h4>
+              <h4 className="font-heading font-bold text-sm mb-3">Win Streak → Bonus Points</h4>
               <div className="space-y-1.5">
                 {winStreaks.map((w, i) => (
                   <div key={i} className="flex items-center justify-between font-mono text-sm">
-                    <span className="text-muted">{w.streak} picks</span>
+                    <span className="text-muted">{w.streak} in a row</span>
                     <span className="text-pump font-bold">{w.mult}</span>
                   </div>
                 ))}
               </div>
               <p className="text-muted/50 text-xs mt-3 font-mono">
-                Wrong pick resets to 0. VOID/NS freezes streak.
+                +2 per consecutive win, stacks infinitely. Wrong pick resets to 0.
               </p>
             </div>
 

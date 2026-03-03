@@ -11,32 +11,28 @@ const fadeUp = {
 
 const checks = [
   {
-    title: "TWAP Pricing",
-    desc: "Time-weighted averages resist single-trade spikes. P0: min 2-10, P1: last 15 min.",
+    title: "Birdeye Price Oracle",
+    desc: "Settlement prices fetched from Birdeye — independent, trusted Solana data provider. No self-reported prices.",
   },
   {
-    title: "Liquidity Floor: $25K",
-    desc: "Doubles the cost to manipulate a pool. No cheap rugs.",
+    title: "Liquidity Floor",
+    desc: "Minimum liquidity required to enter the round. No micro-cap tokens that can be moved with pocket change.",
   },
   {
-    title: "Volume Floor: $50K",
-    desc: "Thin or wash-traded rounds auto-VOID. No fake activity.",
-  },
-  {
-    title: "Source Mismatch Guard",
-    desc: ">8% price divergence between sources = VOID. No stale data exploits.",
-  },
-  {
-    title: "Outlier Trade Filter",
-    desc: "Single trade >15% of pool depth excluded from TWAP. No whale spikes.",
+    title: "24h Cooldown",
+    desc: "No token repeats within 24 hours. Fresh tokens every round — no patterns to exploit.",
   },
   {
     title: "Hidden Selection",
-    desc: "Token not revealed until window opens. Zero front-running possible.",
+    desc: "Tokens not revealed until the round opens. Zero front-running possible.",
   },
   {
     title: "Prediction Reveal Delay",
     desc: "Individual picks stay hidden until the window closes. No copying, no herding.",
+  },
+  {
+    title: "Weighted Random Draw",
+    desc: "Top candidates picked by weighted random — highest activity scores are favored but not guaranteed. No deterministic front-running.",
   },
 ];
 

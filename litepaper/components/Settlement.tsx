@@ -17,10 +17,8 @@ const rules = [
     color: "text-warn",
     stripe: "rule-stripe-warn",
     conditions: [
-      "Liquidity < $25,000",
-      "Volume < $50,000",
-      "Missing TWAP data points",
-      "Source mismatch > 8%",
+      "Price data unavailable",
+      "Token delisted or untradeable",
     ],
     result: "Round skipped, stakes refunded",
   },
@@ -30,9 +28,7 @@ const rules = [
     color: "text-rug",
     stripe: "rule-stripe-rug",
     conditions: [
-      "Price drops 20%+ (P1 ≤ 0.80 × P0)",
-      "Liquidity drains 70%+ (L1 ≤ 0.30 × L0)",
-      "Sell-blocked behavior detected",
+      "Price drops 5%+ (P1 ≤ 0.95 × P0)",
     ],
     result: "RUG confirmed, rug callers eat",
   },
@@ -42,8 +38,7 @@ const rules = [
     color: "text-pump",
     stripe: "rule-stripe-pump",
     conditions: [
-      "Price rises 20%+ (P1 ≥ 1.20 × P0)",
-      "Liquidity stays healthy (L1 ≥ 0.60 × L0)",
+      "Price rises 5%+ (P1 ≥ 1.05 × P0)",
     ],
     result: "PUMP confirmed, pump callers win",
   },
@@ -52,7 +47,7 @@ const rules = [
     icon: <Question size={24} weight="fill" className="text-muted" />,
     color: "text-muted",
     stripe: "rule-stripe-muted",
-    conditions: ["Doesn't meet RUG or PUMP thresholds"],
+    conditions: ["Price stays within ±5% — no clear move"],
     result: "Too ambiguous, stakes refunded",
   },
 ];
@@ -103,12 +98,10 @@ export default function Settlement() {
             <Info size={20} weight="fill" className="text-accent" />
             <h3 className="font-heading font-bold text-sm">How we measure</h3>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
+          <div className="grid grid-cols-2 gap-3 font-mono text-xs max-w-md">
             {[
-              { key: "P0", desc: "Start TWAP price (min 2-10)" },
-              { key: "P1", desc: "End TWAP price (last 15 min)" },
-              { key: "L0", desc: "Start liquidity" },
-              { key: "L1", desc: "End liquidity" },
+              { key: "P0", desc: "Price at round open (cached)" },
+              { key: "P1", desc: "Price at settlement (via Birdeye)" },
             ].map((m) => (
               <div key={m.key} className="p-2.5 rounded-lg bg-surface">
                 <span className="text-accent font-bold block">{m.key}</span>
