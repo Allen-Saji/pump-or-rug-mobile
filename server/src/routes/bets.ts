@@ -28,8 +28,23 @@ app.post("/", async (c) => {
   }
 
   const userId = c.get("userId");
-  const bet = betService.placeBet(userId, parsed.data);
+  const bet = await betService.placeBet(userId, parsed.data);
   return c.json(bet, 201);
+});
+
+const confirmBetSchema = z.object({
+  txSignature: z.string().min(1),
+});
+
+app.post("/:id/confirm", async (c) => {
+  const body = await c.req.json();
+  const parsed = confirmBetSchema.safeParse(body);
+  if (!parsed.success) {
+    throw new ValidationError("Invalid confirmation data");
+  }
+  const betId = c.req.param("id");
+  await betService.confirmBet(betId, parsed.data.txSignature);
+  return c.json({ ok: true });
 });
 
 app.get("/mine", (c) => {

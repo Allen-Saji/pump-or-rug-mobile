@@ -57,6 +57,24 @@ export const betRepo = {
       .run();
   },
 
+  updateOnchainStatus(
+    betId: string,
+    txSignature: string,
+    onchainStatus: string
+  ) {
+    db.update(bets)
+      .set({ txSignature, onchainStatus })
+      .where(eq(bets.id, betId))
+      .run();
+  },
+
+  updateClaimTx(betId: string, claimTxSignature: string) {
+    db.update(bets)
+      .set({ claimTxSignature, onchainStatus: "confirmed" })
+      .where(eq(bets.id, betId))
+      .run();
+  },
+
   updateManyResults(
     updates: { id: string; result: string; payout: number }[]
   ) {
