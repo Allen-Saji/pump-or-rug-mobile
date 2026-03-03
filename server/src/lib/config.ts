@@ -4,6 +4,12 @@ export const config = {
   bagsApiKey: process.env.BAGS_API_KEY || "",
   birdeyeApiKey: process.env.BIRDEYE_API_KEY || "",
   privyAppId: process.env.PRIVY_APP_ID || "",
+  solanaRpcUrl: process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com",
+  programId:
+    process.env.PROGRAM_ID ||
+    "8v3eum4thAGnRRYKK34xXvm9bPTaz5ydA3GzfTxSKjbD",
+  resolverKeypairPath:
+    process.env.RESOLVER_KEYPAIR_PATH || "~/.config/solana/id.json",
 } as const;
 
 // Round lifecycle

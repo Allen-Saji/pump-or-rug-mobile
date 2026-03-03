@@ -10,13 +10,15 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
     "@pump-or-rug/shared": "workspace:*",
-    "hono": "^4.7.0",
-    "drizzle-orm": "^0.38.0",
-    "zod": "^3.24.0",
-    "ulid": "^2.3.0",
+    "@solana/web3.js": "^1.98.4",
     "croner": "^9.0.0",
-    "jose": "^6.0.0"
+    "drizzle-orm": "^0.38.0",
+    "hono": "^4.7.0",
+    "jose": "^6.0.0",
+    "ulid": "^2.3.0",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/bun": "latest",
