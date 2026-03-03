@@ -19,9 +19,9 @@ const fadeUp = {
 const timelineSteps = [
   { label: "Token Selected", sub: "(hidden)", color: "var(--muted)" },
   { label: "Round Opens", sub: "(revealed)", color: "var(--accent)" },
-  { label: "45m Prediction", sub: "Window", color: "var(--pump)" },
+  { label: "60m Prediction", sub: "Window", color: "var(--pump)" },
   { label: "Picks Lock", sub: "", color: "var(--warn)" },
-  { label: "6h Settlement", sub: "", color: "var(--rug)" },
+  { label: "Settlement", sub: "at :05", color: "var(--rug)" },
   { label: "Result", sub: "", color: "var(--pump)" },
 ];
 
@@ -35,16 +35,16 @@ const faqs = [
   },
   {
     icon: <Timer size={28} weight="duotone" className="text-warn" />,
-    question: "Why 6 hours, not 15 minutes?",
+    question: "Why hourly rounds?",
     answer:
-      "Most people think a token's fate is sealed in the first 15 minutes. It's not. That's just bot wars, sniper buys, and hype noise. The real signal takes hours: does the community stick around? Does liquidity hold? 6h + TWAP pricing lets that play out, so the game rewards reading fundamentals, not reacting to a launch candle.",
+      "Fast enough to keep you hooked. Long enough for real price action. Every hour is a fresh arena — new tokens, new calls. You read the chart, make your play, and results drop at :05 the next hour. 24 rounds a day. No waiting around.",
     accent: "warn",
   },
   {
     icon: <Shuffle size={28} weight="duotone" className="text-pump" />,
     question: "How are tokens picked?",
     answer:
-      "Each platform runs its own independent pipeline. pump.fun and bags.fm each feed tokens through filtering and scoring, then 2 are picked per platform — 4 total per round. They're not revealed until the round opens. No one can front-run or pre-position.",
+      "Tokens are pulled from pump.fun's live feed, filtered by age and liquidity, scored by activity, then 4 are picked via weighted random draw. They're not revealed until the round opens. No one can front-run or pre-position.",
     accent: "pump",
   },
 ];

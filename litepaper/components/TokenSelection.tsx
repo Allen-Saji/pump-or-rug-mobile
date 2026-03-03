@@ -24,20 +24,20 @@ const filters = [
   {
     icon: <Timer size={20} weight="duotone" className="text-accent" />,
     label: "Age",
-    threshold: "15 min – 72 hours",
-    why: "Too young = no data. Too old = stale. Sweet spot catches tokens with enough history to analyze but still in their volatile phase.",
+    threshold: "≥ 5 minutes",
+    why: "Brand-new tokens have no data. 5-minute floor ensures there's enough on-chain activity to analyze.",
   },
   {
     icon: <CurrencyDollar size={20} weight="duotone" className="text-pump" />,
     label: "Liquidity",
-    threshold: "≥ $25,000",
-    why: "Thin pools are trivially manipulable. $25k floor makes market-moving trades expensive enough to deter gaming.",
+    threshold: "≥ $5,000",
+    why: "Thin pools are trivially manipulable. Liquidity floor makes market-moving trades expensive enough to deter gaming.",
   },
   {
     icon: <ChartBar size={20} weight="duotone" className="text-warn" />,
-    label: "Volume",
-    threshold: "≥ $30,000 (30 min)",
-    why: "Real trading activity means real price discovery. Low volume = wash trades or dead token.",
+    label: "Activity",
+    threshold: "Recent trades required",
+    why: "Token must show real recent trading activity. Dead tokens with no trades get filtered out.",
   },
   {
     icon: <ShieldCheck size={20} weight="duotone" className="text-pump" />,
@@ -93,8 +93,8 @@ export default function TokenSelection() {
             How Tokens Get <span className="text-pump">Selected</span>
           </h2>
           <p className="text-muted mt-3 max-w-lg mx-auto">
-            Every hour, the engine picks four tokens — two from each platform.
-            Each launchpad feeds its own pipeline: filter, score, select.
+            Every hour, the engine picks four tokens from pump.fun&apos;s live feed.
+            One pipeline: filter, score, select.
           </p>
         </motion.div>
 
@@ -134,27 +134,17 @@ export default function TokenSelection() {
               1. Token Sources
             </h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { name: "pump.fun", color: "pump", desc: "Solana's biggest memecoin launchpad" },
-              { name: "bags.fm", color: "accent", desc: "Community-driven token launchpad" },
-            ].map((src) => (
-              <div
-                key={src.name}
-                className="flex items-center gap-3 p-3 rounded-xl bg-surface"
-              >
-                <div className={`w-2 h-8 rounded-full bg-${src.color}`} />
-                <div>
-                  <span className={`font-mono text-sm font-bold text-${src.color}`}>
-                    {src.name}
-                  </span>
-                  <p className="text-muted text-xs mt-0.5">{src.desc}</p>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-surface">
+            <div className="w-2 h-8 rounded-full bg-pump" />
+            <div>
+              <span className="font-mono text-sm font-bold text-pump">
+                pump.fun
+              </span>
+              <p className="text-muted text-xs mt-0.5">Solana&apos;s biggest memecoin launchpad — where the degen action is</p>
+            </div>
           </div>
           <p className="text-muted/60 text-xs mt-3 font-mono">
-            Each platform feeds its own independent pipeline
+            We go where the action is. Multi-platform expansion coming in V2.
           </p>
         </motion.div>
 
@@ -170,7 +160,7 @@ export default function TokenSelection() {
               2. Five-Gate Filter (per platform)
             </h3>
             <span className="ml-auto font-mono text-xs text-muted/60">
-              applied independently to each feed
+              applied to pump.fun feed
             </span>
           </div>
 
@@ -235,8 +225,8 @@ export default function TokenSelection() {
           </div>
 
           <p className="text-muted text-sm mt-4">
-            Survivors are ranked by activity score per platform. The top 5 from
-            each platform advance to final selection.
+            Survivors are ranked by activity score. The top 5 advance to final
+            selection.
           </p>
         </motion.div>
 
@@ -253,10 +243,10 @@ export default function TokenSelection() {
             </h3>
           </div>
           <p className="text-muted text-sm mb-4">
-            Each platform&apos;s top 5 are assigned weights proportional to their
-            activity scores. A weighted random draw picks 2 winners per
-            platform — the highest scorers are most likely but not guaranteed,
-            keeping every round unpredictable.
+            The top 5 candidates are assigned weights proportional to their
+            activity scores. A weighted random draw picks 4 winners — the
+            highest scorers are most likely but not guaranteed, keeping every
+            round unpredictable.
           </p>
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-pump/20 bg-surface/50">
             <span className="font-mono text-xs text-muted">Result:</span>

@@ -16,8 +16,8 @@ const phases = [
     title: "Prediction Core",
     icon: <GameController size={28} weight="duotone" className="text-pump" />,
     items: [
-      "Hourly rounds (pump.fun + bags.fm)",
-      "TWAP settlement engine",
+      "Hourly rounds (pump.fun)",
+      "Birdeye settlement engine",
       "Leaderboard + streaks",
       "Mobile-first UI",
     ],
@@ -30,10 +30,10 @@ const phases = [
     title: "Clans and Leagues",
     icon: <Sword size={28} weight="duotone" className="text-accent" />,
     items: [
+      "Multi-platform expansion (bags.fm, Raydium)",
       "Team-based competition",
       "Weekly league brackets",
       "Shareable win cards",
-      "Social features",
     ],
     status: "PLANNED",
     statusColor: "text-accent bg-accent/10",

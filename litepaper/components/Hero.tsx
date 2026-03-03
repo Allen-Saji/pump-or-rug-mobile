@@ -30,7 +30,7 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.2, ease }}
           className="font-mono text-xs sm:text-sm tracking-[0.2em] uppercase text-primary/60 mb-6"
         >
-          Mobile prediction game for launchpad tokens.
+          Prediction game for pump.fun tokens.
         </motion.p>
 
         {/* Title — massive split-color */}
@@ -68,9 +68,8 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.7, ease }}
           className="mt-6 text-lg sm:text-xl text-muted max-w-2xl mx-auto"
         >
-          Pump or Rug Arena is a mobile game where you predict whether fresh
-          tokens from pump.fun and bags.fm will pump or rug. Four tokens every
-          hour. Fast calls. Transparent settlement.
+          Every hour, four fresh tokens drop straight from pump.fun.
+          Call PUMP or RUG. Transparent settlement. Real stakes.
         </motion.p>
 
         {/* CTA */}
@@ -97,8 +96,8 @@ export default function Hero() {
         >
           {[
             { value: "24", label: "rounds/day" },
-            { value: "0.01–3 SOL", label: "per pick" },
-            { value: "6h", label: "settlement" },
+            { value: "0.01–1 SOL", label: "per pick" },
+            { value: "1h", label: "rounds" },
           ].map((stat, i) => (
             <motion.div
               key={i}

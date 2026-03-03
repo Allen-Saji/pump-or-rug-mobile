@@ -15,19 +15,19 @@ const steps = [
     num: "01",
     icon: <Coin size={32} weight="duotone" className="text-accent" />,
     title: "Tokens Drop",
-    desc: "Every hour, four fresh tokens — two from pump.fun, two from bags.fm. You don't know which until the round opens.",
+    desc: "Every hour, four fresh tokens straight from pump.fun. You don't know which until the round opens.",
   },
   {
     num: "02",
     icon: <Crosshair size={32} weight="duotone" className="text-pump" />,
     title: "Lock Your Call",
-    desc: "60 minutes to call PUMP or RUG on each token and choose your stake: 0.01 to 3 SOL per token. Your picks are hidden until the window closes. No herding.",
+    desc: "60 minutes to call PUMP or RUG on each token and choose your stake: 0.01 to 1 SOL per token. Your picks are hidden until the window closes. No herding.",
   },
   {
     num: "03",
     icon: <Scales size={32} weight="duotone" className="text-warn" />,
     title: "Engine Settles",
-    desc: "After 6 hours, the TWAP engine checks price and liquidity. The math decides the outcome.",
+    desc: "After the hour closes, the engine checks each token's price. The math decides the outcome.",
   },
 ];
 
@@ -91,7 +91,7 @@ export default function HowItWorks() {
         >
           <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-white/[0.06] bg-surface/50">
             <span className="font-mono text-sm text-muted">Stake:</span>
-            <span className="font-mono text-sm text-primary font-bold">0.01–3 SOL</span>
+            <span className="font-mono text-sm text-primary font-bold">0.01–1 SOL</span>
             <span className="font-mono text-xs text-muted/60">per pick</span>
           </div>
         </motion.div>

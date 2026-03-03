@@ -118,7 +118,7 @@ export default async function Image() {
           {[
             { val: "Every 1h", label: "New rounds" },
             { val: "60 min", label: "Predict window" },
-            { val: "6h", label: "Settlement" },
+            { val: "1h", label: "Settlement" },
           ].map((s) => (
             <div
               key={s.label}

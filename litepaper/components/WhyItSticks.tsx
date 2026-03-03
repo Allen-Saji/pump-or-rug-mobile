@@ -47,7 +47,7 @@ const features = [
   {
     icon: <Lightning size={24} weight="duotone" className="text-warn" />,
     title: "30-Second Sessions",
-    desc: "Open. Pick. Close. Check back in 6 hours for the result.",
+    desc: "Open. Pick. Close. Results drop at :05 the next hour.",
   },
   {
     icon: <BellRinging size={24} weight="duotone" className="text-accent" />,
