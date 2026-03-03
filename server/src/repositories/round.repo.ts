@@ -88,6 +88,21 @@ export const roundRepo = {
       .run();
   },
 
+  getTokenById(tokenId: string): RoundTokenRow | undefined {
+    return db
+      .select()
+      .from(roundTokens)
+      .where(eq(roundTokens.id, tokenId))
+      .get();
+  },
+
+  updateTokenOnchainRoundId(tokenId: string, onchainRoundId: number) {
+    db.update(roundTokens)
+      .set({ onchainRoundId })
+      .where(eq(roundTokens.id, tokenId))
+      .run();
+  },
+
   updatePool(id: string, totalPool: number, totalBets: number) {
     db.update(rounds)
       .set({ totalPool, totalBets })

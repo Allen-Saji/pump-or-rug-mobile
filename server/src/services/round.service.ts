@@ -16,9 +16,18 @@ import {
   RUG_SNIPER_THRESHOLD,
 } from "../lib/config";
 import type { Token, Round, BetResult, TokenPlatform } from "@pump-or-rug/shared";
+import {
+  program,
+  adminKeypair,
+  toOnchainRoundId,
+  getGlobalConfigPda,
+  getRoundPda,
+  getVaultPda,
+  BN,
+} from "./solana.service";
 
 export const roundService = {
-  generateRound(): Round | null {
+  async generateRound(): Promise<Round | null> {
     // Idempotency: compute round number from hour timestamp
     const now = Date.now();
     const hourTimestamp = Math.floor(now / ROUND_DURATION_MS) * ROUND_DURATION_MS;
@@ -76,6 +85,37 @@ export const roundService = {
     console.log(
       `[round] Created round ${roundNumber} with ${tokenRows.length} tokens`
     );
+
+    // Create on-chain rounds (one per token)
+    const openTsSec = Math.floor(opensAt / 1000);
+    const closeTsSec = Math.floor(closesAt / 1000);
+    // settle_ts must be after close_ts; use close + 5min (SETTLEMENT_DELAY_MS)
+    const settleTsSec = closeTsSec + 300;
+
+    for (let i = 0; i < tokenRows.length; i++) {
+      const onchainId = toOnchainRoundId(roundNumber, i);
+      try {
+        const roundPda = getRoundPda(onchainId);
+        const vaultPda = getVaultPda(roundPda);
+
+        await program.methods
+          .createRound(onchainId, new BN(openTsSec), new BN(closeTsSec), new BN(settleTsSec))
+          .accounts({
+            admin: adminKeypair.publicKey,
+            globalConfig: getGlobalConfigPda(),
+            round: roundPda,
+            vault: vaultPda,
+          })
+          .signers([adminKeypair])
+          .rpc();
+
+        roundRepo.updateTokenOnchainRoundId(tokenRows[i].id, onchainId.toNumber());
+        console.log(`[solana] Created on-chain round ${onchainId} for token ${tokenRows[i].ticker}`);
+      } catch (err) {
+        console.error(`[solana] Failed to create on-chain round ${onchainId}:`, err);
+        // Fallback: token operates DB-only (onchainRoundId stays null)
+      }
+    }
 
     return {
       id: roundId,
@@ -154,10 +194,72 @@ export const roundService = {
       roundRepo.updateTokenResult(token.id, closePrice, changePercent, result);
     }
 
-    // Settle bets
-    const allBets = betRepo.getByRound(roundId);
+    // Resolve on-chain rounds
     const updatedTokens = roundRepo.getTokensByRoundId(roundId);
+    for (const token of updatedTokens) {
+      if (!token.onchainRoundId) continue;
+      try {
+        const onchainId = new BN(token.onchainRoundId);
+        const roundPda = getRoundPda(onchainId);
+        const outcome = mapResultToOutcome(token.result);
+
+        // If only one side has bets, cancel instead of resolve with Pump/Rug
+        const onchainRound = await program.account.round.fetch(roundPda);
+        const needsCancel =
+          (outcome === "pump" || outcome === "rug") &&
+          (onchainRound.totalPumpLamports.isZero() || onchainRound.totalRugLamports.isZero());
+
+        if (needsCancel) {
+          await program.methods
+            .cancelRound(onchainId)
+            .accounts({
+              resolver: adminKeypair.publicKey,
+              globalConfig: getGlobalConfigPda(),
+              round: roundPda,
+            })
+            .signers([adminKeypair])
+            .rpc();
+          console.log(`[solana] Cancelled on-chain round ${onchainId} (one-sided pool)`);
+        } else {
+          await program.methods
+            .resolveRound(onchainId, { [outcome]: {} } as any)
+            .accounts({
+              resolver: adminKeypair.publicKey,
+              globalConfig: getGlobalConfigPda(),
+              round: roundPda,
+            })
+            .signers([adminKeypair])
+            .rpc();
+          console.log(`[solana] Resolved on-chain round ${onchainId} → ${outcome}`);
+        }
+      } catch (err) {
+        console.error(`[solana] Failed to resolve on-chain round ${token.onchainRoundId}:`, err);
+      }
+    }
+
+    // Settle bets — compute pro-rata payouts from on-chain pool state
+    const allBets = betRepo.getByRound(roundId);
     const tokenResultMap = new Map(updatedTokens.map((t) => [t.id, t.result]));
+
+    // Build on-chain pool state map for pro-rata calculation
+    const tokenPoolState = new Map<string, {
+      totalPump: number; totalRug: number; feeBps: number;
+    }>();
+    for (const token of updatedTokens) {
+      if (!token.onchainRoundId) continue;
+      try {
+        const onchainId = new BN(token.onchainRoundId);
+        const roundPda = getRoundPda(onchainId);
+        const roundAccount = await program.account.round.fetch(roundPda);
+        tokenPoolState.set(token.id, {
+          totalPump: roundAccount.totalPumpLamports.toNumber(),
+          totalRug: roundAccount.totalRugLamports.toNumber(),
+          feeBps: roundAccount.feeBps,
+        });
+      } catch {
+        // If fetch fails, this token won't have pro-rata data
+      }
+    }
 
     // Track per-user bet outcomes for scoring
     const userBetOutcomes = new Map<
@@ -181,7 +283,22 @@ export const roundService = {
       }
 
       const won = bet.side === tokenResult;
-      const payout = won ? bet.amount * 1.85 : 0;
+      // Pro-rata payout from on-chain pool state
+      const pool = tokenPoolState.get(bet.tokenId);
+      let payout: number;
+      if (pool && won) {
+        const amountLamports = Math.round(bet.amount * 1e9);
+        const winnerPool = tokenResult === "pump" ? pool.totalPump : pool.totalRug;
+        const loserPool = tokenResult === "pump" ? pool.totalRug : pool.totalPump;
+        const profitShare = (loserPool * amountLamports) / winnerPool;
+        const fee = (profitShare * pool.feeBps) / 10_000;
+        payout = (amountLamports + profitShare - fee) / 1e9;
+      } else if (won) {
+        // Fallback if no on-chain data (DB-only token)
+        payout = bet.amount * 1.85;
+      } else {
+        payout = 0;
+      }
 
       betUpdates.push({ id: bet.id, result: tokenResult, payout });
 
@@ -300,6 +417,16 @@ function mapTokenRow(row: any): Token {
     marketCap: row.marketCap ?? undefined,
     result: row.result ?? undefined,
   };
+}
+
+function mapResultToOutcome(result: string | null): string {
+  switch (result) {
+    case "pump": return "pump";
+    case "rug": return "rug";
+    case "no_score": return "noScore";
+    case "void": return "void";
+    default: return "void";
+  }
 }
 
 function mapToRound(row: any, tokens: Token[]): Round {
