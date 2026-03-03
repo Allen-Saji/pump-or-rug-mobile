@@ -6,13 +6,16 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-pump_or_rug_escrow = "PuRugx6dQ9v3KfJdV8s8Yw6Qf2mUQ7uXjR4T9n2k3Lm"
+pump_or_rug_escrow = "8v3eum4thAGnRRYKK34xXvm9bPTaz5ydA3GzfTxSKjbD"
+
+[programs.devnet]
+pump_or_rug_escrow = "8v3eum4thAGnRRYKK34xXvm9bPTaz5ydA3GzfTxSKjbD"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "Devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

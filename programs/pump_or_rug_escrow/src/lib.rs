@@ -12,7 +12,7 @@ pub mod state;
 use instructions::*;
 use state::*;
 
-declare_id!("PuRugx6dQ9v3KfJdV8s8Yw6Qf2mUQ7uXjR4T9n2k3Lm");
+declare_id!("8v3eum4thAGnRRYKK34xXvm9bPTaz5ydA3GzfTxSKjbD");
 
 #[program]
 pub mod pump_or_rug_escrow {
