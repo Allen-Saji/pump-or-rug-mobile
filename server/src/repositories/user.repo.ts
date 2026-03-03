@@ -147,7 +147,7 @@ export const userRepo = {
         and(eq(users.id, bets.userId), gte(bets.placedAt, sinceMs))
       )
       .groupBy(users.id)
-      .orderBy(desc(sql`periodPoints`))
+      .orderBy(desc(sql`COALESCE(SUM(${bets.payout}), 0)`))
       .limit(limit)
       .all();
 
