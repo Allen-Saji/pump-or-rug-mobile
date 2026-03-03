@@ -1,11 +1,6 @@
 import { create } from "zustand";
 import type { Bet, Round, LeaderboardEntry, LeaderboardPeriod } from "./types";
-import {
-  fetchRounds,
-  fetchRound,
-  fetchLeaderboard,
-  placeBet as mockPlaceBet,
-} from "./mock-data";
+import { api } from "./api";
 
 interface AppState {
   // Rounds
@@ -38,13 +33,23 @@ export const useStore = create<AppState>((set, get) => ({
   currentRound: null,
   loadRounds: async () => {
     set({ loading: true });
-    const rounds = await fetchRounds();
-    set({ rounds, loading: false });
+    try {
+      const rounds = await api.getRounds();
+      set({ rounds, loading: false });
+    } catch (err) {
+      console.error("[store] loadRounds failed:", err);
+      set({ loading: false });
+    }
   },
   loadRound: async (id: string) => {
     set({ loading: true });
-    const round = await fetchRound(id);
-    set({ currentRound: round ?? null, loading: false });
+    try {
+      const round = await api.getRound(id);
+      set({ currentRound: round, loading: false });
+    } catch (err) {
+      console.error("[store] loadRound failed:", err);
+      set({ currentRound: null, loading: false });
+    }
   },
 
   // Leaderboard
@@ -52,14 +57,19 @@ export const useStore = create<AppState>((set, get) => ({
   leaderboardPeriod: "weekly",
   setLeaderboardPeriod: async (period: LeaderboardPeriod) => {
     set({ leaderboardPeriod: period, loading: true });
-    const leaderboard = await fetchLeaderboard(period);
-    set({ leaderboard, loading: false });
+    try {
+      const leaderboard = await api.getLeaderboard(period);
+      set({ leaderboard, loading: false });
+    } catch (err) {
+      console.error("[store] setLeaderboardPeriod failed:", err);
+      set({ loading: false });
+    }
   },
 
   // Betting
   userBets: [],
   placeBet: async (roundId, tokenId, side, amount) => {
-    const bet = await mockPlaceBet(roundId, tokenId, side, amount);
+    const bet = await api.placeBet({ roundId, tokenId, side, amount });
     set({ userBets: [bet, ...get().userBets] });
     return bet;
   },

@@ -2,6 +2,7 @@
   "name": "pump-or-rug-mobile",
   "version": "1.0.0",
   "private": true,
+  "workspaces": ["shared", "server"],
   "main": "entrypoint.js",
   "scripts": {
     "start": "expo start",
