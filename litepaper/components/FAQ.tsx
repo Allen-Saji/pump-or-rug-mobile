@@ -14,23 +14,23 @@ const fadeUp = {
 const faqs = [
   {
     q: "What is Pump or Rug?",
-    a: "A prediction game. Every hour, four tokens appear — two from pump.fun, two from bags.fm. You have a full 60-minute window to call PUMP or RUG on each. After 6 hours the price is checked and you find out if you were right.",
+    a: "A prediction game. Every hour, four tokens drop straight from pump.fun. You have a full 60-minute window to call PUMP or RUG on each. After the hour closes, the price is checked and you find out if you were right.",
   },
   {
     q: "What does PUMP mean? What about RUG?",
-    a: "PUMP means you think the token's price will rise at least 20% within 6 hours while liquidity stays healthy. RUG means you think it'll drop 20%+ or the liquidity will drain. These come from crypto slang: \"pump\" = price goes up, \"rug pull\" = creators dump and run.",
+    a: "PUMP means you think the token's price will rise at least 5% by the end of the hour. RUG means you think it'll drop 5%+. These come from crypto slang: \"pump\" = price goes up, \"rug pull\" = creators dump and run.",
   },
   {
-    q: "What is TWAP?",
-    a: "Time-Weighted Average Price. Instead of checking one price at one moment (easy to manipulate), TWAP averages the price over a window of time. We use it so a single whale trade can't decide the outcome.",
+    q: "How is the price checked?",
+    a: "We use Birdeye, an independent Solana data provider. At settlement time, the engine fetches each token's current price from Birdeye and compares it to the price when the round opened.",
   },
   {
-    q: "What are pump.fun and bags.fm?",
-    a: "Token launchpads on Solana where anyone can create and launch a new token. We pull our round tokens from these platforms automatically.",
+    q: "What is pump.fun?",
+    a: "Solana's biggest memecoin launchpad — where anyone can create and launch a new token. We pull our round tokens from pump.fun's live feed automatically.",
   },
   {
     q: "What is SOL?",
-    a: "Solana's native cryptocurrency. You stake 0.01 to 3 SOL per pick.",
+    a: "Solana's native cryptocurrency. You stake 0.01 to 1 SOL per pick.",
   },
   {
     q: "What does VOID mean?",
@@ -42,15 +42,15 @@ const faqs = [
   },
   {
     q: "What do P0, P1, L0, L1 mean?",
-    a: "P0 = starting price (TWAP of the first few minutes). P1 = ending price (TWAP of the last 15 min). L0 = starting liquidity. L1 = ending liquidity. These are compared to decide if a token pumped, rugged, or did nothing.",
+    a: "P0 = starting price (cached when round opens). P1 = ending price (fetched from Birdeye at settlement). If P1/P0 shows ≥5% move, the outcome is decided.",
   },
   {
     q: "How does scoring work?",
-    a: "Points track reputation and are independent of stake. Correct call = +10 points. Wrong call = -3 points. Get 3 of 4 right in a round for a +5 bonus. Perfect round (4/4) = +15 bonus. Win streaks multiply points up to 2.5x. Break-even accuracy is 23.1%.",
+    a: "Points track reputation and are independent of stake. Correct call = +5 points. Wrong call = -3 points. Perfect round (all correct) = 2x multiplier. Correctly calling a heavy rug (>25% drop) = +3 rug sniper bonus. Win streaks add +2 per consecutive win, stacking. Break-even accuracy is 37.5%.",
   },
   {
     q: "How do payouts work?",
-    a: "Stake 0.01–3 SOL per pick. Win = 1.8x your stake returned. Lose = you lose your stake. VOID or NO SCORE = full refund. There's a 5% rake on winnings only (effective return 1.76x), which funds the prize pool and operations.",
+    a: "Stake 0.01–1 SOL per pick. Win = 1.85x your stake returned. Lose = you lose your stake. VOID or NO SCORE = full refund.",
   },
   {
     q: "What is the leaderboard?",
@@ -58,15 +58,15 @@ const faqs = [
   },
   {
     q: "How do streaks work?",
-    a: "Win streaks: consecutive correct picks build a point multiplier — 1.2x at 3 picks, 1.5x at 5, 2.0x at 8, capped at 2.5x at 12+. One wrong pick resets it. VOID/NS freezes the streak. Daily streaks: play at least once per day (UTC) for bonus points — Day 1: +5, Day 3: +10, Day 7: +25 + badge, Day 14: +50, Day 30: +100 + Degen of the Month badge. Miss a day and it resets.",
+    a: "Win streaks: consecutive correct picks earn +2 bonus points per streak level. The bonus stacks — a 5th consecutive win earns +10 bonus on top of the base +5. One wrong pick resets it. Daily streaks: play at least once per day to keep your streak alive. Miss a day and it resets to zero.",
   },
   {
-    q: "Why 6 hours instead of 15 minutes?",
-    a: "The first 15 minutes of any token launch is chaos: bots, snipers, and hype traders. That's noise, not signal. 6 hours gives the real market time to show up. Combined with TWAP pricing, it makes the game about skill, not reflexes.",
+    q: "Why 1-hour rounds?",
+    a: "Long enough for real price action to play out. Short enough to keep the game moving — 24 rounds per day, new tokens every hour. You make your call, lock it in, and results drop fast.",
   },
   {
     q: "Can someone manipulate the outcome?",
-    a: "We've made it very expensive to try. Minimum liquidity and volume floors, TWAP instead of spot price, outlier trade filtering, and multi-source price checks. Max round profit is ~9 SOL, well below the $7k+ manipulation cost.",
+    a: "We've made it very expensive to try. Liquidity floors, hidden token selection, 24h cooldown on repeats, and independent price oracle (Birdeye). Max round profit is ~4 SOL per round — not worth the effort.",
   },
   {
     q: "What does \"sell-blocked\" mean?",
@@ -74,7 +74,7 @@ const faqs = [
   },
   {
     q: "Is this gambling?",
-    a: "It's a prediction game with variable stakes (0.01–3 SOL per pick) and a scoring system based on accuracy. The 5% rake on winnings funds the prize pool that gets redistributed to top players. Points are stake-independent — you can't buy your way to the top of the leaderboard.",
+    a: "It's a prediction game with variable stakes (0.01–1 SOL per pick) and a scoring system based on accuracy. Points are stake-independent — you can't buy your way to the top of the leaderboard.",
   },
 ];
 
