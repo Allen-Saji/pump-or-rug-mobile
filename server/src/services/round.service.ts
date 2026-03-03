@@ -233,11 +233,28 @@ export const roundService = {
       // Floor at 0 to prevent negative total points
       const clampedPoints = Math.max(points, -user.points);
 
+      // Daily streak: check if user played yesterday (within 24-48h ago)
+      const lastBetTime = userRepo.getLastBetTime(userId);
+      const DAY_MS = 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      let dailyStreak: number;
+      if (lastBetTime && now - lastBetTime < 2 * DAY_MS) {
+        // Played within last 2 days — extend streak
+        dailyStreak = user.dailyStreak + 1;
+      } else if (lastBetTime && now - lastBetTime < DAY_MS) {
+        // Same day — keep streak
+        dailyStreak = user.dailyStreak;
+      } else {
+        // Lapsed — reset to 1 (they played today)
+        dailyStreak = 1;
+      }
+
       userRepo.incrementStats(userId, {
         points: clampedPoints,
         wins,
         bets: outcomes.length,
         winStreak: newStreak,
+        dailyStreak,
       });
     }
 
