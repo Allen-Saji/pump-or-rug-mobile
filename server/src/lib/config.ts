@@ -3,7 +3,6 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL || "./data/pump-or-rug.db",
   bagsApiKey: process.env.BAGS_API_KEY || "",
   privyAppId: process.env.PRIVY_APP_ID || "",
-  privyVerificationKey: process.env.PRIVY_VERIFICATION_KEY || "",
 } as const;
 
 // Round lifecycle
@@ -26,8 +25,12 @@ export const PUMP_THRESHOLD = 5; // >=5% = pump
 export const RUG_THRESHOLD = -5; // <=-5% = rug
 
 // Points
-export const POINTS_CORRECT = 100;
-export const POINTS_STREAK_BONUS = 25; // per consecutive win
+export const POINTS_WIN = 5;
+export const POINTS_LOSS = -3;
+export const POINTS_STREAK_BONUS = 2; // per consecutive win (stacks)
+export const POINTS_PERFECT_ROUND_MULTIPLIER = 2; // all calls correct in a round
+export const POINTS_RUG_SNIPER_BONUS = 3; // correctly called a >25% rug
+export const RUG_SNIPER_THRESHOLD = -25; // % drop to qualify for rug sniper
 
 // External APIs
 export const PUMPFUN_API_BASE = "https://frontend-api-v3.pump.fun";

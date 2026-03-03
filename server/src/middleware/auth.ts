@@ -11,6 +11,18 @@ export type AuthContext = {
   };
 };
 
+// Cache JWKS keyset — jose handles key rotation/refresh internally
+let cachedJwks: ReturnType<typeof jose.createRemoteJWKSet> | null = null;
+
+function getJwks() {
+  if (!cachedJwks) {
+    cachedJwks = jose.createRemoteJWKSet(
+      new URL(`https://auth.privy.io/api/v1/apps/${config.privyAppId}/jwks.json`)
+    );
+  }
+  return cachedJwks;
+}
+
 export const authMiddleware = createMiddleware<AuthContext>(async (c, next) => {
   const authHeader = c.req.header("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
@@ -20,9 +32,7 @@ export const authMiddleware = createMiddleware<AuthContext>(async (c, next) => {
   const token = authHeader.slice(7);
 
   try {
-    const jwks = jose.createRemoteJWKSet(
-      new URL("https://auth.privy.io/.well-known/jwks.json")
-    );
+    const jwks = getJwks();
 
     const { payload } = await jose.jwtVerify(token, jwks, {
       issuer: "privy.io",
