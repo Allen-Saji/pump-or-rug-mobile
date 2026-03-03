@@ -1,6 +1,7 @@
 import { Cron } from "croner";
 import { tokenService } from "../services/token.service";
 import { roundService } from "../services/round.service";
+import { reconciliationService } from "../services/reconciliation.service";
 
 let jobs: Cron[] = [];
 
@@ -25,7 +26,7 @@ export function startScheduler() {
 
       console.log("[cron] Generating new round...");
       try {
-        roundService.generateRound();
+        await roundService.generateRound();
       } catch (err) {
         console.error("[cron] Round generation failed:", err);
       }
@@ -45,7 +46,30 @@ export function startScheduler() {
     })
   );
 
-  console.log("[cron] Scheduler started with 2 jobs");
+  // Stale bet cleanup — every 10 minutes
+  jobs.push(
+    new Cron("*/10 * * * *", async () => {
+      try {
+        const cleaned = reconciliationService.cleanStaleBets();
+        if (cleaned > 0) console.log(`[cron] Cleaned ${cleaned} stale bets`);
+      } catch (err) {
+        console.error("[cron] Stale bet cleanup failed:", err);
+      }
+    })
+  );
+
+  // Fee sweep — at :30 of every hour (after settlement + claims)
+  jobs.push(
+    new Cron("30 * * * *", async () => {
+      try {
+        await reconciliationService.sweepFees();
+      } catch (err) {
+        console.error("[cron] Fee sweep failed:", err);
+      }
+    })
+  );
+
+  console.log("[cron] Scheduler started with 4 jobs");
 }
 
 export function stopScheduler() {
