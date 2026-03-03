@@ -22,8 +22,8 @@ export const TOKENS_PER_PLATFORM = 2;
 export const TOP_N_CANDIDATES = 5;
 
 // Result thresholds
-export const PUMP_THRESHOLD = 5; // >=5% = pump
-export const RUG_THRESHOLD = -5; // <=-5% = rug
+export const PUMP_THRESHOLD = 10; // >=10% = pump
+export const RUG_THRESHOLD = -10; // <=-10% = rug
 
 // Points
 export const POINTS_WIN = 5;

@@ -25,9 +25,9 @@ Pump or Rug turns chaos into a game:
 - Transparent rules, no manual interference
 
 ## 5) Settlement logic
-- PUMP: price rises ≥5%
-- RUG: price drops ≥5%
-- NO SCORE: price stays within ±5%
+- PUMP: price rises ≥10%
+- RUG: price drops ≥10%
+- NO SCORE: price stays within ±10%
 - VOID: bad/missing price data
 
 ## 6) Scoring

@@ -18,7 +18,7 @@ const faqs = [
   },
   {
     q: "What does PUMP mean? What about RUG?",
-    a: "PUMP means you think the token's price will rise at least 5% by the end of the hour. RUG means you think it'll drop 5%+. These come from crypto slang: \"pump\" = price goes up, \"rug pull\" = creators dump and run.",
+    a: "PUMP means you think the token's price will rise at least 10% by the end of the hour. RUG means you think it'll drop 10%+. These come from crypto slang: \"pump\" = price goes up, \"rug pull\" = creators dump and run.",
   },
   {
     q: "How is the price checked?",
@@ -42,7 +42,7 @@ const faqs = [
   },
   {
     q: "What do P0, P1, L0, L1 mean?",
-    a: "P0 = starting price (cached when round opens). P1 = ending price (fetched from Birdeye at settlement). If P1/P0 shows ≥5% move, the outcome is decided.",
+    a: "P0 = starting price (cached when round opens). P1 = ending price (fetched from Birdeye at settlement). If P1/P0 shows ≥10% move, the outcome is decided.",
   },
   {
     q: "How does scoring work?",

@@ -28,7 +28,7 @@ const rules = [
     color: "text-rug",
     stripe: "rule-stripe-rug",
     conditions: [
-      "Price drops 5%+ (P1 ≤ 0.95 × P0)",
+      "Price drops 10%+ (P1 ≤ 0.90 × P0)",
     ],
     result: "RUG confirmed, rug callers eat",
   },
@@ -38,7 +38,7 @@ const rules = [
     color: "text-pump",
     stripe: "rule-stripe-pump",
     conditions: [
-      "Price rises 5%+ (P1 ≥ 1.05 × P0)",
+      "Price rises 10%+ (P1 ≥ 1.10 × P0)",
     ],
     result: "PUMP confirmed, pump callers win",
   },
@@ -47,7 +47,7 @@ const rules = [
     icon: <Question size={24} weight="fill" className="text-muted" />,
     color: "text-muted",
     stripe: "rule-stripe-muted",
-    conditions: ["Price stays within ±5% — no clear move"],
+    conditions: ["Price stays within ±10% — no clear move"],
     result: "Too ambiguous, stakes refunded",
   },
 ];

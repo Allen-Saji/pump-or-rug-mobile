@@ -18,9 +18,9 @@
 
 ## Settlement (strict order)
 1. **VOID** if price data unavailable or token untradeable
-2. **RUG** if price drops ≥5%
-3. **PUMP** if price rises ≥5%
-4. **NO SCORE** if price stays within ±5%
+2. **RUG** if price drops ≥10%
+3. **PUMP** if price rises ≥10%
+4. **NO SCORE** if price stays within ±10%
 
 Price measured via Birdeye spot price at settlement time vs. cached price at round open.
 
