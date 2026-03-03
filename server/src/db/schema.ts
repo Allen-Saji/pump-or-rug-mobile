@@ -51,6 +51,7 @@ export const roundTokens = sqliteTable(
     result: text("result", {
       enum: ["pump", "rug", "void", "no_score"],
     }),
+    onchainRoundId: integer("onchain_round_id"),
   },
   (table) => [
     index("idx_round_tokens_round_id").on(table.roundId),
@@ -78,6 +79,11 @@ export const bets = sqliteTable(
     }),
     payout: real("payout"),
     placedAt: integer("placed_at").notNull(),
+    txSignature: text("tx_signature"),
+    claimTxSignature: text("claim_tx_signature"),
+    onchainStatus: text("onchain_status", {
+      enum: ["pending", "confirmed", "failed"],
+    }).default("pending"),
   },
   (table) => [
     index("idx_bets_user_id").on(table.userId),
