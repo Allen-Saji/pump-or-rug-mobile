@@ -1,14 +1,25 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { ulid } from "ulid";
+import * as jose from "jose";
 import { authMiddleware, type AuthContext } from "../middleware/auth";
 import { userRepo } from "../repositories/user.repo";
 import { betService } from "../services/bet.service";
 import { ValidationError, UnauthorizedError } from "../lib/errors";
-import * as jose from "jose";
 import { config } from "../lib/config";
 
 const app = new Hono<AuthContext>();
+
+// Cache JWKS for register endpoint (same as auth middleware)
+let cachedJwks: ReturnType<typeof jose.createRemoteJWKSet> | null = null;
+function getJwks() {
+  if (!cachedJwks) {
+    cachedJwks = jose.createRemoteJWKSet(
+      new URL(`https://auth.privy.io/api/v1/apps/${config.privyAppId}/jwks.json`)
+    );
+  }
+  return cachedJwks;
+}
 
 const registerSchema = z.object({
   displayName: z.string().min(1).max(30),
@@ -27,10 +38,7 @@ app.post("/", async (c) => {
   let privyUserId: string;
 
   try {
-    const jwks = jose.createRemoteJWKSet(
-      new URL("https://auth.privy.io/.well-known/jwks.json")
-    );
-    const { payload } = await jose.jwtVerify(token, jwks, {
+    const { payload } = await jose.jwtVerify(token, getJwks(), {
       issuer: "privy.io",
       audience: config.privyAppId,
     });
@@ -63,13 +71,15 @@ app.post("/", async (c) => {
     createdAt: Date.now(),
   });
 
+  const rank = userRepo.getRank(user.id);
+
   return c.json({
     id: user.id,
     walletAddress: user.walletAddress ?? "",
     displayName: user.displayName,
     avatarUrl: user.avatarUrl,
     points: user.points,
-    rank: 0,
+    rank,
     winStreak: user.winStreak,
     dailyStreak: user.dailyStreak,
     totalBets: user.totalBets,
@@ -90,6 +100,7 @@ app.get("/me", (c) => {
   }
 
   const bets = betService.getUserBets(userId);
+  const rank = userRepo.getRank(userId);
 
   return c.json({
     id: user.id,
@@ -97,7 +108,7 @@ app.get("/me", (c) => {
     displayName: user.displayName,
     avatarUrl: user.avatarUrl,
     points: user.points,
-    rank: 0,
+    rank,
     winStreak: user.winStreak,
     dailyStreak: user.dailyStreak,
     totalBets: user.totalBets,

@@ -22,6 +22,17 @@ export const userRepo = {
       .get();
   },
 
+  getRank(userId: string): number {
+    const user = db.select().from(users).where(eq(users.id, userId)).get();
+    if (!user) return 0;
+    const result = db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(users)
+      .where(sql`${users.points} > ${user.points}`)
+      .get();
+    return (result?.count ?? 0) + 1;
+  },
+
   upsert(user: UserInsert): UserRow {
     db.insert(users)
       .values(user)
@@ -55,17 +66,33 @@ export const userRepo = {
 
   incrementStats(
     id: string,
-    deltas: { points: number; wins: number; bets: number; winStreak: number }
+    deltas: {
+      points: number;
+      wins: number;
+      bets: number;
+      winStreak: number;
+      dailyStreak?: number;
+    }
   ) {
-    db.update(users)
-      .set({
-        points: sql`${users.points} + ${deltas.points}`,
-        totalWins: sql`${users.totalWins} + ${deltas.wins}`,
-        totalBets: sql`${users.totalBets} + ${deltas.bets}`,
-        winStreak: deltas.winStreak,
-      })
-      .where(eq(users.id, id))
-      .run();
+    const set: Record<string, any> = {
+      points: sql`${users.points} + ${deltas.points}`,
+      totalWins: sql`${users.totalWins} + ${deltas.wins}`,
+      totalBets: sql`${users.totalBets} + ${deltas.bets}`,
+      winStreak: deltas.winStreak,
+    };
+    if (deltas.dailyStreak !== undefined) {
+      set.dailyStreak = deltas.dailyStreak;
+    }
+    db.update(users).set(set).where(eq(users.id, id)).run();
+  },
+
+  getLastBetTime(userId: string): number | null {
+    const result = db
+      .select({ latest: sql<number>`MAX(${bets.placedAt})` })
+      .from(bets)
+      .where(eq(bets.userId, userId))
+      .get();
+    return result?.latest ?? null;
   },
 
   getLeaderboard(
