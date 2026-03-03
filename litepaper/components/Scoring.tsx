@@ -11,7 +11,7 @@ const fadeUp = {
 };
 
 const payouts = [
-  { val: "0.01–1", label: "SOL stake per pick", color: "text-accent" },
+  { val: "≤1 SOL", label: "Stake per pick", color: "text-accent" },
   { val: "1.85x", label: "Win payout", color: "text-pump" },
   { val: "0x", label: "Lose stake", color: "text-rug" },
   { val: "Refund", label: "VOID / NS", color: "text-muted" },
@@ -22,7 +22,7 @@ const points = [
   { val: "-3", label: "Wrong pick", color: "text-rug" },
   { val: "0", label: "VOID / NS", color: "text-muted" },
   { val: "2x", label: "Perfect round", color: "text-accent" },
-  { val: "+3", label: "Rug sniper (>25% drop)", color: "text-warn" },
+  { val: "+3", label: "Rug sniper bonus", color: "text-warn" },
 ];
 
 const winStreaks = [
@@ -42,11 +42,11 @@ const dailyStreaks = [
 
 function ScoringCard({ val, label, color }: { val: string; label: string; color: string }) {
   return (
-    <div className="rounded-2xl p-6 border border-white/[0.04] bg-surfaceElevated text-center">
-      <span className={`${color} text-3xl sm:text-4xl font-black font-mono block`}>
+    <div className="rounded-2xl p-5 border border-white/[0.04] bg-surfaceElevated text-center flex flex-col items-center justify-center min-h-[100px]">
+      <span className={`${color} text-2xl sm:text-3xl font-black font-mono block whitespace-nowrap`}>
         {val}
       </span>
-      <p className="text-muted text-xs mt-2 font-mono">{label}</p>
+      <p className="text-muted text-[11px] mt-1.5 font-mono leading-tight">{label}</p>
     </div>
   );
 }
