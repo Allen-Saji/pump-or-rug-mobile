@@ -58,10 +58,23 @@ async function getPumpFunPrice(mint: string): Promise<number | null> {
   }
 }
 
+// In-memory cache for bags pools to avoid re-fetching on every price lookup
+let bagsPoolsCache: { pools: Awaited<ReturnType<typeof fetchBagsPools>>; fetchedAt: number } | null = null;
+const BAGS_CACHE_TTL_MS = 60_000; // 1 minute
+
+async function getBagsPoolsCached() {
+  const now = Date.now();
+  if (bagsPoolsCache && now - bagsPoolsCache.fetchedAt < BAGS_CACHE_TTL_MS) {
+    return bagsPoolsCache.pools;
+  }
+  const pools = await fetchBagsPools(100);
+  bagsPoolsCache = { pools, fetchedAt: now };
+  return pools;
+}
+
 async function getBagsPrice(mint: string): Promise<number | null> {
   try {
-    // bags.fm may have a direct token endpoint; for now re-fetch pools and find
-    const pools = await fetchBagsPools(100);
+    const pools = await getBagsPoolsCached();
     const pool = pools.find((p) => p.tokenMint === mint);
     return pool?.price ?? null;
   } catch {
