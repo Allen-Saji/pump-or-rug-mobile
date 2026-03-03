@@ -7,23 +7,55 @@ const config = getDefaultConfig(__dirname);
 // Privy SDK uses .mjs imports that Metro needs to resolve
 config.resolver.sourceExts = [...(config.resolver.sourceExts || []), "mjs", "cjs"];
 
-// Force jose to resolve to browser build instead of Node ESM build
-const originalResolveRequest = config.resolver.resolveRequest;
-config.resolver.resolveRequest = (context, moduleName, platform) => {
-  // Redirect jose imports to browser build
-  if (moduleName === "jose" || moduleName.startsWith("jose/")) {
-    const browserPath = moduleName === "jose"
-      ? path.resolve(__dirname, "node_modules/jose/dist/browser/index.js")
-      : path.resolve(__dirname, "node_modules", moduleName.replace("jose/", "jose/dist/browser/"));
+// Block server directory from Metro bundling (server-only code)
+config.resolver.blockList = [
+  ...(config.resolver.blockList || []),
+  new RegExp(path.resolve(__dirname, "server") + "/.*"),
+];
 
-    return {
-      type: "sourceFile",
-      filePath: browserPath,
-    };
+// Privy's jose v4 resolves to node/esm build which requires Node "crypto".
+// Force it to the browser build which uses WebCrypto instead.
+const privyJoseNodeDir = path.join(
+  __dirname,
+  "node_modules/@privy-io/js-sdk-core/node_modules/jose/dist/node"
+);
+const privyJoseBrowserDir = path.join(
+  __dirname,
+  "node_modules/@privy-io/js-sdk-core/node_modules/jose/dist/browser"
+);
+
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // If the importing file is inside jose's node/ directory, redirect to browser/
+  if (
+    context.originModulePath &&
+    context.originModulePath.startsWith(privyJoseNodeDir)
+  ) {
+    const browserPath = context.originModulePath.replace(
+      "/jose/dist/node/esm/",
+      "/jose/dist/browser/"
+    ).replace(
+      "/jose/dist/node/cjs/",
+      "/jose/dist/browser/"
+    );
+    return context.resolveRequest(
+      { ...context, originModulePath: browserPath },
+      moduleName,
+      platform
+    );
   }
 
-  if (originalResolveRequest) {
-    return originalResolveRequest(context, moduleName, platform);
+  // When jose itself is imported, resolve to browser entry
+  if (moduleName === "jose") {
+    // Check if it's being required from Privy
+    if (
+      context.originModulePath &&
+      context.originModulePath.includes("@privy-io/")
+    ) {
+      return {
+        type: "sourceFile",
+        filePath: path.join(privyJoseBrowserDir, "index.js"),
+      };
+    }
   }
 
   return context.resolveRequest(context, moduleName, platform);
