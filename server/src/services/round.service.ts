@@ -8,8 +8,12 @@ import {
   ROUND_DURATION_MS,
   PUMP_THRESHOLD,
   RUG_THRESHOLD,
-  POINTS_CORRECT,
+  POINTS_WIN,
+  POINTS_LOSS,
   POINTS_STREAK_BONUS,
+  POINTS_PERFECT_ROUND_MULTIPLIER,
+  POINTS_RUG_SNIPER_BONUS,
+  RUG_SNIPER_THRESHOLD,
 } from "../lib/config";
 import type { Token, Round, BetResult, TokenPlatform } from "@pump-or-rug/shared";
 
@@ -155,8 +159,11 @@ export const roundService = {
     const updatedTokens = roundRepo.getTokensByRoundId(roundId);
     const tokenResultMap = new Map(updatedTokens.map((t) => [t.id, t.result]));
 
-    // Group bets by user for streak tracking
-    const userBetResults = new Map<string, boolean[]>();
+    // Track per-user bet outcomes for scoring
+    const userBetOutcomes = new Map<
+      string,
+      { won: boolean; tokenId: string }[]
+    >();
 
     const betUpdates: { id: string; result: string; payout: number }[] = [];
 
@@ -178,29 +185,58 @@ export const roundService = {
 
       betUpdates.push({ id: bet.id, result: tokenResult, payout });
 
-      if (!userBetResults.has(bet.userId)) {
-        userBetResults.set(bet.userId, []);
+      if (!userBetOutcomes.has(bet.userId)) {
+        userBetOutcomes.set(bet.userId, []);
       }
-      userBetResults.get(bet.userId)!.push(won);
+      userBetOutcomes.get(bet.userId)!.push({ won, tokenId: bet.tokenId });
     }
 
     betRepo.updateManyResults(betUpdates);
 
-    // Update user stats
-    for (const [userId, results] of userBetResults) {
-      const wins = results.filter(Boolean).length;
+    // Build token change % lookup for rug sniper bonus
+    const tokenChangeMap = new Map(
+      updatedTokens.map((t) => [t.id, t.priceChangePercent ?? 0])
+    );
+
+    // Update user stats with new scoring
+    for (const [userId, outcomes] of userBetOutcomes) {
       const user = userRepo.getById(userId);
       if (!user) continue;
 
-      const allWins = results.every(Boolean);
-      const newStreak = allWins ? user.winStreak + 1 : 0;
-      const streakBonus = allWins ? newStreak * POINTS_STREAK_BONUS : 0;
-      const points = wins * POINTS_CORRECT + streakBonus;
+      const wins = outcomes.filter((o) => o.won).length;
+      const losses = outcomes.length - wins;
+      const allWon = outcomes.length > 0 && outcomes.every((o) => o.won);
+
+      // Base points: +5 per win, -3 per loss
+      let points = wins * POINTS_WIN + losses * POINTS_LOSS;
+
+      // Streak bonus: +2 per consecutive win (stacks with current streak)
+      const newStreak = allWon ? user.winStreak + 1 : 0;
+      if (allWon) {
+        points += newStreak * POINTS_STREAK_BONUS;
+      }
+
+      // Perfect round: 2x multiplier if called every token correctly
+      if (allWon && outcomes.length >= 2) {
+        points *= POINTS_PERFECT_ROUND_MULTIPLIER;
+      }
+
+      // Rug sniper: +3 bonus for correctly calling a heavy rug (>25% drop)
+      for (const outcome of outcomes) {
+        if (!outcome.won) continue;
+        const change = tokenChangeMap.get(outcome.tokenId) ?? 0;
+        if (change <= RUG_SNIPER_THRESHOLD) {
+          points += POINTS_RUG_SNIPER_BONUS;
+        }
+      }
+
+      // Floor at 0 to prevent negative total points
+      const clampedPoints = Math.max(points, -user.points);
 
       userRepo.incrementStats(userId, {
-        points,
+        points: clampedPoints,
         wins,
-        bets: results.length,
+        bets: outcomes.length,
         winStreak: newStreak,
       });
     }
