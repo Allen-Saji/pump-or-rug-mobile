@@ -7,10 +7,11 @@ let jobs: Cron[] = [];
 export function startScheduler() {
   console.log("[cron] Starting scheduler...");
 
-  // Token cache refresh — every 10 minutes
+  // Round generation — at :00 of every hour
+  // Refreshes token cache first, then picks tokens for the new round
   jobs.push(
-    new Cron("*/10 * * * *", async () => {
-      console.log("[cron] Refreshing token cache...");
+    new Cron("0 * * * *", async () => {
+      console.log("[cron] Refreshing token cache before round generation...");
       try {
         await tokenService.refreshCache("pump.fun");
       } catch (err) {
@@ -21,12 +22,7 @@ export function startScheduler() {
       } catch (err) {
         console.error("[cron] bags.fm refresh failed:", err);
       }
-    })
-  );
 
-  // Round generation — at :00 of every hour
-  jobs.push(
-    new Cron("0 * * * *", () => {
       console.log("[cron] Generating new round...");
       try {
         roundService.generateRound();
@@ -49,7 +45,7 @@ export function startScheduler() {
     })
   );
 
-  console.log("[cron] Scheduler started with 3 jobs");
+  console.log("[cron] Scheduler started with 2 jobs");
 }
 
 export function stopScheduler() {
