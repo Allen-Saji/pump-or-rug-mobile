@@ -18,9 +18,11 @@ import { BetSheet } from "@/components/BetSheet";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
 import { SkeletonRoundCard } from "@/components/SkeletonRoundCard";
 import type { BetSide, Token } from "@/lib/types";
+import { useSolanaSignAndSend } from "@/lib/solana";
 
 export default function HomeScreen() {
   const { rounds, loadRounds, placeBet, loading } = useStore();
+  const signAndSend = useSolanaSignAndSend();
   const { authenticated, truncatedAddress } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [betToken, setBetToken] = useState<Token | null>(null);
@@ -49,7 +51,7 @@ export default function HomeScreen() {
 
   const handleConfirmBet = async (amount: number) => {
     if (betRoundId && betToken && betSide) {
-      await placeBet(betRoundId, betToken.id, betSide, amount);
+      await placeBet(betRoundId, betToken.id, betSide, amount, signAndSend);
       setBetToken(null);
       setBetSide(null);
       setBetRoundId(null);

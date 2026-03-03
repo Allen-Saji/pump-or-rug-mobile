@@ -1,19 +1,29 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Haptics from "expo-haptics";
 import { Colors, Gradients, Glows } from "@/constants/theme";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
+import { useSolanaSignAndSend } from "@/lib/solana";
 import { GlowCard } from "@/components/GlowCard";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
 import { ResultBadge } from "@/components/ResultBadge";
 
 export default function ProfileScreen() {
-  const { userBets } = useStore();
+  const { userBets, loadUserBets, claimBet, claiming } = useStore();
+  const signAndSend = useSolanaSignAndSend();
+  const [claimError, setClaimError] = useState<string | null>(null);
   const { authenticated, user, walletAddress, truncatedAddress, logout } =
     useAuth();
+
+  // Load bets when authenticated
+  useEffect(() => {
+    if (authenticated) loadUserBets();
+  }, [authenticated]);
 
   // Guest view — prompt to log in
   if (!authenticated) {
@@ -176,12 +186,52 @@ export default function ProfileScreen() {
                             color:
                               (bet.payout ?? 0) > bet.amount
                                 ? Colors.pump
+                                : (bet.payout ?? 0) === bet.amount
+                                ? Colors.whiteDim
                                 : Colors.rug,
                           }}
                         >
                           {(bet.payout ?? 0) > bet.amount ? "+" : ""}
                           {((bet.payout ?? 0) - bet.amount).toFixed(2)} SOL
                         </Text>
+                        {/* Claim button */}
+                        {(bet.payout ?? 0) > 0 && !bet.claimed && signAndSend && (
+                          <Pressable
+                            onPress={async () => {
+                              setClaimError(null);
+                              try {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                await claimBet(bet, signAndSend);
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                              } catch (err: any) {
+                                setClaimError(err?.message ?? "Claim failed");
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                              }
+                            }}
+                            disabled={claiming === bet.id}
+                            style={{ marginTop: 4 }}
+                          >
+                            <LinearGradient
+                              colors={Gradients.pumpButton}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                              className="rounded-md px-3 py-1"
+                            >
+                              {claiming === bet.id ? (
+                                <ActivityIndicator size="small" color={Colors.dark} />
+                              ) : (
+                                <Text className="font-bold font-mono text-[10px]" style={{ color: Colors.dark }}>
+                                  Claim
+                                </Text>
+                              )}
+                            </LinearGradient>
+                          </Pressable>
+                        )}
+                        {bet.claimed && (
+                          <Text className="font-mono text-[10px] mt-1" style={{ color: Colors.pump + "80" }}>
+                            Claimed
+                          </Text>
+                        )}
                       </>
                     ) : (
                       <Text className="text-white/30 font-mono text-xs">

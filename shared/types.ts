@@ -43,6 +43,7 @@ export interface Bet {
   result?: BetResult;
   payout?: number;
   placedAt: number;
+  claimed?: boolean;
 }
 
 export interface User {

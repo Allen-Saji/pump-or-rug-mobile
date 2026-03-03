@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import LottieView from "lottie-react-native";
+import * as Haptics from "expo-haptics";
 import { Colors, Gradients, Glows } from "@/constants/theme";
 import { useStore } from "@/lib/store";
 import { GlowCard } from "@/components/GlowCard";
@@ -14,16 +15,21 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { BetSheet } from "@/components/BetSheet";
 import { SkeletonRoundDetail } from "@/components/SkeletonRoundDetail";
 import type { BetSide, Token } from "@/lib/types";
+import { useSolanaSignAndSend } from "@/lib/solana";
 
 export default function RoundDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { currentRound, loadRound, userBets: allUserBets, placeBet } = useStore();
+  const { currentRound, loadRound, userBets: allUserBets, loadUserBets, placeBet, claimBet, claiming } = useStore();
+  const signAndSend = useSolanaSignAndSend();
   const [betToken, setBetToken] = useState<Token | null>(null);
   const [betSide, setBetSide] = useState<BetSide | null>(null);
 
   useEffect(() => {
-    if (id) loadRound(id);
+    if (id) {
+      loadRound(id);
+      loadUserBets(id);
+    }
   }, [id]);
 
   const handleBet = (tokenId: string, side: BetSide) => {
@@ -37,12 +43,12 @@ export default function RoundDetailScreen() {
   const handleConfirmBet = useCallback(
     async (amount: number) => {
       if (currentRound && betToken && betSide) {
-        await placeBet(currentRound.id, betToken.id, betSide, amount);
+        await placeBet(currentRound.id, betToken.id, betSide, amount, signAndSend);
         setBetToken(null);
         setBetSide(null);
       }
     },
-    [currentRound, betToken, betSide, placeBet]
+    [currentRound, betToken, betSide, placeBet, signAndSend]
   );
 
   if (!currentRound) {
@@ -239,20 +245,59 @@ export default function RoundDetailScreen() {
                       {bet.amount} SOL
                     </Text>
                   </View>
-                  {bet.result && (
-                    <Text
-                      className="font-mono font-bold text-sm"
-                      style={{
-                        color:
-                          (bet.payout ?? 0) > bet.amount
-                            ? Colors.pump
-                            : Colors.rug,
-                      }}
-                    >
-                      {(bet.payout ?? 0) > bet.amount ? "+" : ""}
-                      {((bet.payout ?? 0) - bet.amount).toFixed(2)} SOL
-                    </Text>
-                  )}
+                  <View className="items-end">
+                    {bet.result && (
+                      <Text
+                        className="font-mono font-bold text-sm"
+                        style={{
+                          color:
+                            (bet.payout ?? 0) > bet.amount
+                              ? Colors.pump
+                              : (bet.payout ?? 0) === bet.amount
+                              ? Colors.whiteDim
+                              : Colors.rug,
+                        }}
+                      >
+                        {(bet.payout ?? 0) > bet.amount ? "+" : ""}
+                        {((bet.payout ?? 0) - bet.amount).toFixed(2)} SOL
+                      </Text>
+                    )}
+                    {bet.result && (bet.payout ?? 0) > 0 && !bet.claimed && signAndSend && (
+                      <Pressable
+                        onPress={async () => {
+                          try {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                            await claimBet(bet, signAndSend);
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                          } catch {
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                          }
+                        }}
+                        disabled={claiming === bet.id}
+                        style={{ marginTop: 4 }}
+                      >
+                        <LinearGradient
+                          colors={Gradients.pumpButton}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          className="rounded-md px-3 py-1"
+                        >
+                          {claiming === bet.id ? (
+                            <ActivityIndicator size="small" color={Colors.dark} />
+                          ) : (
+                            <Text className="font-bold font-mono text-[10px]" style={{ color: Colors.dark }}>
+                              Claim
+                            </Text>
+                          )}
+                        </LinearGradient>
+                      </Pressable>
+                    )}
+                    {bet.claimed && (
+                      <Text className="font-mono text-[10px] mt-1" style={{ color: Colors.pump + "80" }}>
+                        Claimed
+                      </Text>
+                    )}
+                  </View>
                 </GlowCard>
               ))}
             </View>

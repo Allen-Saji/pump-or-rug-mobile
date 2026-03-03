@@ -2,6 +2,11 @@ import { create } from "zustand";
 import type { Bet, Round, LeaderboardEntry, LeaderboardPeriod } from "./types";
 import { api } from "./api";
 
+// Signer function: takes base64 unsigned tx, returns tx signature string
+export type SolanaSignAndSend = (
+  unsignedTxBase64: string
+) => Promise<string>;
+
 interface AppState {
   // Rounds
   rounds: Round[];
@@ -16,15 +21,22 @@ interface AppState {
 
   // Betting
   userBets: Bet[];
+  loadUserBets: (roundId?: string) => Promise<void>;
   placeBet: (
     roundId: string,
     tokenId: string,
     side: "pump" | "rug",
-    amount: number
+    amount: number,
+    signAndSend?: SolanaSignAndSend
   ) => Promise<Bet>;
+  claimBet: (
+    bet: Bet,
+    signAndSend: SolanaSignAndSend
+  ) => Promise<void>;
 
   // Loading states
   loading: boolean;
+  claiming: string | null; // bet ID currently being claimed
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -68,11 +80,61 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Betting
   userBets: [],
-  placeBet: async (roundId, tokenId, side, amount) => {
-    const bet = await api.placeBet({ roundId, tokenId, side, amount });
+  loadUserBets: async (roundId) => {
+    try {
+      const bets = await api.getMyBets(roundId);
+      set({ userBets: bets });
+    } catch (err) {
+      console.error("[store] loadUserBets failed:", err);
+    }
+  },
+  placeBet: async (roundId, tokenId, side, amount, signAndSend) => {
+    const result = await api.placeBet({ roundId, tokenId, side, amount });
+    const { unsignedTx, ...bet } = result;
+
+    // Sign and submit on-chain transaction if available
+    if (unsignedTx && signAndSend) {
+      try {
+        const txSig = await signAndSend(unsignedTx);
+        await api.confirmBet(bet.id, txSig);
+        console.log("[store] Bet confirmed on-chain:", txSig);
+      } catch (err) {
+        console.error("[store] On-chain bet signing failed:", err);
+        // DB bet still exists — user can retry signing later
+      }
+    }
+
     set({ userBets: [bet, ...get().userBets] });
     return bet;
   },
 
+  claimBet: async (bet, signAndSend) => {
+    set({ claiming: bet.id });
+    try {
+      // Get unsigned claim tx from server
+      const { unsignedTx } = await api.getClaimTx(bet.tokenId);
+
+      // Sign and submit on-chain
+      const txSig = await signAndSend(unsignedTx);
+
+      // Confirm with server
+      await api.confirmClaim(bet.id, txSig);
+
+      // Update local state
+      set({
+        userBets: get().userBets.map((b) =>
+          b.id === bet.id ? { ...b, claimed: true } : b
+        ),
+        claiming: null,
+      });
+
+      console.log("[store] Claim confirmed:", txSig);
+    } catch (err) {
+      set({ claiming: null });
+      throw err;
+    }
+  },
+
   loading: false,
+  claiming: null,
 }));

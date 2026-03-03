@@ -71,13 +71,32 @@ export const api = {
 
   // Bets (auth required)
   placeBet: (data: PlaceBetInput) =>
-    apiFetch<Bet>("/api/bets", {
+    apiFetch<Bet & { unsignedTx?: string }>("/api/bets", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
+  confirmBet: (betId: string, txSignature: string) =>
+    apiFetch<{ ok: boolean }>(`/api/bets/${betId}/confirm`, {
+      method: "POST",
+      body: JSON.stringify({ txSignature }),
+    }),
+
   getMyBets: (roundId?: string) =>
     apiFetch<Bet[]>(`/api/bets/mine${roundId ? `?roundId=${roundId}` : ""}`),
+
+  // Solana (auth required)
+  getClaimTx: (tokenId: string) =>
+    apiFetch<{ unsignedTx: string }>("/api/solana/claim-tx", {
+      method: "POST",
+      body: JSON.stringify({ tokenId }),
+    }),
+
+  confirmClaim: (betId: string, txSignature: string) =>
+    apiFetch<{ ok: boolean }>("/api/solana/confirm-claim", {
+      method: "POST",
+      body: JSON.stringify({ betId, txSignature }),
+    }),
 
   // Leaderboard
   getLeaderboard: (period: LeaderboardPeriod, limit = 20) =>
