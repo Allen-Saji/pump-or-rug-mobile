@@ -39,7 +39,10 @@ export const userRepo = {
       .onConflictDoUpdate({
         target: users.privyUserId,
         set: {
-          walletAddress: user.walletAddress,
+          // Only overwrite wallet if a value is provided (avoids race with PATCH /me/wallet)
+          walletAddress: user.walletAddress
+            ? user.walletAddress
+            : sql`COALESCE(${users.walletAddress}, ${user.walletAddress})`,
           displayName: user.displayName,
           avatarUrl: user.avatarUrl,
         },
