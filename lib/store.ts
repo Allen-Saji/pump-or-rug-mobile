@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { Bet, Round, LeaderboardEntry, LeaderboardPeriod } from "./types";
 import { api } from "./api";
+import { toast } from "./toast";
 
 // Signer function: takes base64 unsigned tx, returns tx signature string
 export type SolanaSignAndSend = (
@@ -89,7 +90,13 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
   placeBet: async (roundId, tokenId, side, amount, signAndSend) => {
-    const result = await api.placeBet({ roundId, tokenId, side, amount });
+    let result;
+    try {
+      result = await api.placeBet({ roundId, tokenId, side, amount });
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to place bet");
+      throw err;
+    }
     const { unsignedTx, ...bet } = result;
 
     // Sign and submit on-chain transaction if available
@@ -100,6 +107,7 @@ export const useStore = create<AppState>((set, get) => ({
         console.log("[store] Bet confirmed on-chain:", txSig);
       } catch (err) {
         console.error("[store] On-chain bet signing failed:", err);
+        toast.error("On-chain signing failed — bet saved, retry later");
         // DB bet still exists — user can retry signing later
       }
     }
@@ -129,7 +137,8 @@ export const useStore = create<AppState>((set, get) => ({
       });
 
       console.log("[store] Claim confirmed:", txSig);
-    } catch (err) {
+    } catch (err: any) {
+      toast.error(err?.message || "Claim failed");
       set({ claiming: null });
       throw err;
     }
