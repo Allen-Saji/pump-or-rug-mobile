@@ -19,6 +19,8 @@ export interface Token {
   liquidity?: number;
   marketCap?: number;
   result?: BetResult;
+  pumpPool?: number;
+  rugPool?: number;
 }
 
 export interface Round {

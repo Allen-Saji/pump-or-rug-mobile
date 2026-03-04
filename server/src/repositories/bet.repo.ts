@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import { bets, rounds, roundTokens } from "../db/schema";
 
@@ -73,6 +73,21 @@ export const betRepo = {
       .set({ claimTxSignature, onchainStatus: "confirmed" })
       .where(eq(bets.id, betId))
       .run();
+  },
+
+  getPoolsByToken(
+    roundId: string
+  ): { tokenId: string; side: string; pool: number }[] {
+    return db
+      .select({
+        tokenId: bets.tokenId,
+        side: bets.side,
+        pool: sql<number>`COALESCE(SUM(${bets.amount}), 0)`,
+      })
+      .from(bets)
+      .where(eq(bets.roundId, roundId))
+      .groupBy(bets.tokenId, bets.side)
+      .all();
   },
 
   updateManyResults(

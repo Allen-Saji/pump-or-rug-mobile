@@ -184,11 +184,34 @@ export function BetSheet({
               />
             </View>
 
-            {/* Amount display */}
-            <Text className="text-white text-center font-bold font-mono text-2xl mb-4">
+            {/* Amount + estimated payout */}
+            <Text className="text-white text-center font-bold font-mono text-2xl mb-1">
               {amount.toFixed(2)}{" "}
               <Text className="text-white/50 text-base">SOL</Text>
             </Text>
+            {(() => {
+              const myPool = isPump ? (token.pumpPool ?? 0) : (token.rugPool ?? 0);
+              const otherPool = isPump ? (token.rugPool ?? 0) : (token.pumpPool ?? 0);
+              const totalAfter = myPool + amount + otherPool;
+              const myShareAfter = myPool + amount;
+              if (totalAfter > 0 && otherPool > 0) {
+                const estPayout = (amount / myShareAfter) * totalAfter * 0.95;
+                const mult = estPayout / amount;
+                return (
+                  <Text className="text-center font-mono text-xs mb-4" style={{ color: Colors.whiteDim }}>
+                    Est. payout:{" "}
+                    <Text style={{ color }}>
+                      {estPayout.toFixed(2)} SOL ({mult.toFixed(2)}x)
+                    </Text>
+                  </Text>
+                );
+              }
+              return (
+                <Text className="text-center font-mono text-xs mb-4" style={{ color: Colors.whiteDim }}>
+                  First bet on this side — odds depend on opposing pool
+                </Text>
+              );
+            })()}
 
             {/* Confirm */}
             <TouchableOpacity

@@ -430,6 +430,17 @@ function mapResultToOutcome(result: string | null): string {
 }
 
 function mapToRound(row: any, tokens: Token[]): Round {
+  // Enrich tokens with per-side pool data for open rounds
+  if (row.status === "open") {
+    const pools = betRepo.getPoolsByToken(row.id);
+    for (const token of tokens) {
+      const pump = pools.find((p) => p.tokenId === token.id && p.side === "pump");
+      const rug = pools.find((p) => p.tokenId === token.id && p.side === "rug");
+      token.pumpPool = pump?.pool ?? 0;
+      token.rugPool = rug?.pool ?? 0;
+    }
+  }
+
   return {
     id: row.id,
     roundNumber: row.roundNumber,
