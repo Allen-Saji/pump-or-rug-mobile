@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Text, Pressable, Modal, TouchableOpacity, Image } from "react-native";
+import { View, Text, Pressable, Modal, TouchableOpacity, Image, ActivityIndicator } from "react-native";
 import Slider from "@react-native-community/slider";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,7 +9,6 @@ import LottieView from "lottie-react-native";
 import { router } from "expo-router";
 import { Colors, Gradients, Glows } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
-import { useWallet } from "@/lib/wallet";
 import { proxyImageUrl } from "@/lib/utils";
 import type { BetSide, Token } from "@/lib/types";
 
@@ -17,7 +16,7 @@ interface BetSheetProps {
   visible: boolean;
   token: Token | null;
   side: BetSide | null;
-  onConfirm: (amount: number) => void;
+  onConfirm: (amount: number) => Promise<void>;
   onClose: () => void;
 }
 
@@ -34,25 +33,37 @@ export function BetSheet({
   const [activeStake, setActiveStake] = useState<number | null>(0.1);
   const [confirmed, setConfirmed] = useState(false);
   const { authenticated } = useAuth();
-  const { activeWallet, externalWalletName } = useWallet();
   const isPump = side === "pump";
   const color = isPump ? Colors.pump : Colors.rug;
   const glow = isPump ? Glows.pump : Glows.rug;
   const insets = useSafeAreaInsets();
 
-  const handleConfirm = useCallback(() => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleConfirm = useCallback(async () => {
     if (!authenticated) {
       onClose();
       router.push("/login");
       return;
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setConfirmed(true);
-    setTimeout(() => {
-      setConfirmed(false);
-      onConfirm(amount);
-    }, 1500);
-  }, [amount, onConfirm, authenticated, onClose]);
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await onConfirm(amount);
+      // Only show celebration after successful bet (including on-chain signing)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setConfirmed(true);
+      setTimeout(() => {
+        setConfirmed(false);
+        handleClose();
+      }, 1500);
+    } catch {
+      // Error toasts are handled by the store
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [amount, onConfirm, authenticated, onClose, submitting]);
 
   const handleClose = () => {
     setConfirmed(false);
@@ -219,7 +230,8 @@ export function BetSheet({
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={handleConfirm}
-              style={{ borderRadius: 14, overflow: "hidden", ...glow }}
+              disabled={submitting}
+              style={{ borderRadius: 14, overflow: "hidden", opacity: submitting ? 0.6 : 1, ...glow }}
             >
               <LinearGradient
                 colors={
@@ -231,21 +243,16 @@ export function BetSheet({
                 end={{ x: 1, y: 0 }}
                 className="py-3.5 items-center"
               >
-                <Text className="font-bold font-mono text-lg" style={{ color: isPump ? Colors.dark : Colors.white }}>
-                  Confirm {isPump ? "PUMP" : "RUG"}
-                </Text>
+                {submitting ? (
+                  <ActivityIndicator color={isPump ? Colors.dark : Colors.white} />
+                ) : (
+                  <Text className="font-bold font-mono text-lg" style={{ color: isPump ? Colors.dark : Colors.white }}>
+                    Confirm {isPump ? "PUMP" : "RUG"}
+                  </Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* Signing wallet indicator */}
-            {authenticated && (
-              <Text className="text-center font-mono text-[10px] mt-2" style={{ color: Colors.whiteDim }}>
-                Signing with{" "}
-                {activeWallet === "external"
-                  ? externalWalletName ?? "External Wallet"
-                  : "Embedded Wallet"}
-              </Text>
-            )}
           </View>
         </LinearGradient>
       </View>

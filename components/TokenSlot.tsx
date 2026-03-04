@@ -12,6 +12,7 @@ interface TokenSlotProps {
   isOpen: boolean;
   onPump: () => void;
   onRug: () => void;
+  disabled?: boolean;
 }
 
 const platformColors: Record<string, string> = {
@@ -20,7 +21,7 @@ const platformColors: Record<string, string> = {
   raydium: "#9945FF",
 };
 
-export function TokenSlot({ token, isOpen, onPump, onRug }: TokenSlotProps) {
+export function TokenSlot({ token, isOpen, onPump, onRug, disabled }: TokenSlotProps) {
   const platColor = platformColors[token.platform] ?? Colors.dark300;
   const [imgError, setImgError] = useState(false);
 
@@ -107,10 +108,10 @@ export function TokenSlot({ token, isOpen, onPump, onRug }: TokenSlotProps) {
       {isOpen && (
         <View className="flex-row gap-2 mt-1">
           <View className="flex-1">
-            <PumpRugButton side="pump" onPress={onPump} compact />
+            <PumpRugButton side="pump" onPress={onPump} compact disabled={disabled} />
           </View>
           <View className="flex-1">
-            <PumpRugButton side="rug" onPress={onRug} compact />
+            <PumpRugButton side="rug" onPress={onRug} compact disabled={disabled} />
           </View>
         </View>
       )}

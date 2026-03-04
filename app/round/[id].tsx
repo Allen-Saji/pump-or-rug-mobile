@@ -44,8 +44,6 @@ export default function RoundDetailScreen() {
     async (amount: number) => {
       if (currentRound && betToken && betSide) {
         await placeBet(currentRound.id, betToken.id, betSide, amount, signAndSend);
-        setBetToken(null);
-        setBetSide(null);
       }
     },
     [currentRound, betToken, betSide, placeBet, signAndSend]

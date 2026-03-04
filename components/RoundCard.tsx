@@ -19,6 +19,7 @@ interface RoundCardProps {
   round: Round;
   onBet: (tokenId: string, side: "pump" | "rug") => void;
   index?: number;
+  betsDisabled?: boolean;
 }
 
 const statusLabels: Record<string, { label: string; color: string }> = {
@@ -57,7 +58,7 @@ function PulsingDot({ color }: { color: string }) {
   );
 }
 
-export function RoundCard({ round, onBet, index = 0 }: RoundCardProps) {
+export function RoundCard({ round, onBet, index = 0, betsDisabled }: RoundCardProps) {
   const router = useRouter();
   const status = statusLabels[round.status];
   const isOpen = round.status === "open";
@@ -112,6 +113,7 @@ export function RoundCard({ round, onBet, index = 0 }: RoundCardProps) {
               isOpen={isOpen}
               onPump={() => onBet(token.id, "pump")}
               onRug={() => onBet(token.id, "rug")}
+              disabled={betsDisabled}
             />
           ))}
         </GlowCard>
