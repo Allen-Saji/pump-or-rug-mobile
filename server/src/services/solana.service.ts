@@ -11,7 +11,15 @@ import IDL from "../lib/idl.json";
 import type { PumpOrRugEscrow } from "../lib/idl-types";
 
 // ── Keypair loading ──────────────────────────────────────────────
-function loadKeypair(path: string): Keypair {
+function loadKeypair(): Keypair {
+  // Prefer base64-encoded keypair from env (for deployed environments)
+  const b64 = process.env.RESOLVER_KEYPAIR_BASE64;
+  if (b64) {
+    const raw = JSON.parse(Buffer.from(b64, "base64").toString("utf-8"));
+    return Keypair.fromSecretKey(Uint8Array.from(raw));
+  }
+  // Fallback to file path for local dev
+  const path = config.resolverKeypairPath;
   const resolved = path.replace(/^~/, process.env.HOME || "");
   const raw = JSON.parse(readFileSync(resolved, "utf-8"));
   return Keypair.fromSecretKey(Uint8Array.from(raw));
@@ -19,7 +27,7 @@ function loadKeypair(path: string): Keypair {
 
 // ── Singleton instances ──────────────────────────────────────────
 const connection = new Connection(config.solanaRpcUrl, "confirmed");
-const adminKeypair = loadKeypair(config.resolverKeypairPath);
+const adminKeypair = loadKeypair();
 const wallet = new Wallet(adminKeypair);
 const provider = new AnchorProvider(connection, wallet, {
   commitment: "confirmed",

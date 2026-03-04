@@ -13,7 +13,20 @@ import { useStore } from "@/lib/store";
 import { LeaderboardRow } from "@/components/LeaderboardRow";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
 import { SkeletonLeaderboardRow } from "@/components/SkeletonLeaderboardRow";
-import type { LeaderboardPeriod } from "@/lib/types";
+import type { LeaderboardEntry, LeaderboardPeriod } from "@/lib/types";
+
+const DUMMY_LEADERBOARD: LeaderboardEntry[] = [
+  { rank: 1, userId: "d1", displayName: "SolMaxi.sol", points: 2480, winStreak: 12 },
+  { rank: 2, userId: "d2", displayName: "RugSniffer69", points: 2115, winStreak: 7 },
+  { rank: 3, userId: "d3", displayName: "PumpItUp", points: 1890, winStreak: 5 },
+  { rank: 4, userId: "d4", displayName: "DgenAlpha", points: 1645, winStreak: 3 },
+  { rank: 5, userId: "d5", displayName: "ChadTrader", points: 1420, winStreak: 4 },
+  { rank: 6, userId: "d6", displayName: "MoonBoi", points: 1180, winStreak: 0 },
+  { rank: 7, userId: "d7", displayName: "WhaleWatcher", points: 955, winStreak: 2 },
+  { rank: 8, userId: "d8", displayName: "TokenSniper", points: 810, winStreak: 0 },
+  { rank: 9, userId: "d9", displayName: "NgmiKing", points: 640, winStreak: 1 },
+  { rank: 10, userId: "d10", displayName: "DiamondPaws", points: 505, winStreak: 0 },
+];
 
 const periods: { key: LeaderboardPeriod; label: string }[] = [
   { key: "daily", label: "Daily" },
@@ -98,7 +111,7 @@ export default function LeaderboardScreen() {
             ))}
           </View>
         )}
-        {leaderboard.map((entry, i) => (
+        {(leaderboard.length > 0 ? leaderboard : DUMMY_LEADERBOARD).map((entry, i) => (
           <LeaderboardRow key={entry.userId} entry={entry} index={i} />
         ))}
         <View className="h-8" />

@@ -1,6 +1,8 @@
 export const config = {
   port: Number(process.env.PORT) || 3000,
-  databaseUrl: process.env.DATABASE_URL || "./data/pump-or-rug.db",
+  databaseUrl:
+    process.env.DATABASE_URL ||
+    (process.env.FLY_APP_NAME ? "/data/pump-or-rug.db" : "./data/pump-or-rug.db"),
   bagsApiKey: process.env.BAGS_API_KEY || "",
   birdeyeApiKey: process.env.BIRDEYE_API_KEY || "",
   privyAppId: process.env.PRIVY_APP_ID || "",
