@@ -8422,6 +8422,7 @@ __metadata:
   resolution: "pump-or-rug-mobile@workspace:."
   dependencies:
     "@babel/core": "npm:^7.25.0"
+    "@coral-xyz/anchor": "npm:^0.32.1"
     "@ethersproject/shims": "npm:^5.8.0"
     "@expo/vector-icons": "npm:^15.0.3"
     "@gorhom/bottom-sheet": "npm:^5.0.6"
@@ -8431,7 +8432,9 @@ __metadata:
     "@privy-io/expo": "npm:^0.63.7"
     "@privy-io/expo-native-extensions": "npm:^0.0.7"
     "@react-native-community/slider": "npm:5.0.1"
+    "@solana/web3.js": "npm:^1.98.4"
     "@types/react": "npm:~19.1.10"
+    buffer: "npm:^6.0.3"
     expo: "npm:~54.0.0"
     expo-apple-authentication: "npm:~8.0.8"
     expo-application: "npm:~7.0.8"

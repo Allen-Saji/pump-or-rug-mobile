@@ -26,6 +26,7 @@
     "@privy-io/expo-native-extensions": "^0.0.7",
     "@react-native-community/slider": "5.0.1",
     "@solana/web3.js": "^1.98.4",
+    "buffer": "^6.0.3",
     "expo": "~54.0.0",
     "expo-apple-authentication": "~8.0.8",
     "expo-application": "~7.0.8",

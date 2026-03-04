@@ -25,6 +25,12 @@ const privyJoseBrowserDir = path.join(
 );
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // @solana/web3.js references Node builtins that don't exist in RN.
+  // Return empty modules for ones that aren't actually needed at runtime.
+  const emptyModules = ["http", "https", "zlib", "viem", "@privy-io/ethereum"];
+  if (emptyModules.includes(moduleName)) {
+    return { type: "empty" };
+  }
   // If the importing file is inside jose's node/ directory, redirect to browser/
   if (
     context.originModulePath &&
