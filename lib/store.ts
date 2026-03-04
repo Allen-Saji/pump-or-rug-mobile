@@ -90,26 +90,35 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
   placeBet: async (roundId, tokenId, side, amount, signAndSend) => {
-    let result;
+    // Step 1: Prepare — validate + build unsigned tx (no DB write)
+    let prepared;
     try {
-      result = await api.placeBet({ roundId, tokenId, side, amount });
+      prepared = await api.prepareBet({ roundId, tokenId, side, amount });
     } catch (err: any) {
-      toast.error(err?.message || "Failed to place bet");
+      toast.error(err?.message || "Failed to prepare bet");
       throw err;
     }
-    const { unsignedTx, ...bet } = result;
 
-    // Sign and submit on-chain transaction if available
-    if (unsignedTx && signAndSend) {
+    // Step 2: Sign on-chain if tx available
+    let txSignature: string | undefined;
+    if (prepared.unsignedTx && signAndSend) {
       try {
-        const txSig = await signAndSend(unsignedTx);
-        await api.confirmBet(bet.id, txSig);
-        console.log("[store] Bet confirmed on-chain:", txSig);
-      } catch (err) {
-        console.error("[store] On-chain bet signing failed:", err);
-        toast.error("On-chain signing failed — bet saved, retry later");
-        // DB bet still exists — user can retry signing later
+        txSignature = await signAndSend(prepared.unsignedTx);
+        console.log("[store] On-chain tx signed:", txSignature);
+      } catch (err: any) {
+        console.error("[store] On-chain signing failed:", err);
+        toast.error(err?.message || "On-chain signing failed");
+        throw err;
       }
+    }
+
+    // Step 3: Commit — save bet to DB only after successful signing
+    let bet;
+    try {
+      bet = await api.commitBet({ roundId, tokenId, side, amount, txSignature });
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to commit bet");
+      throw err;
     }
 
     set({ userBets: [bet, ...get().userBets] });

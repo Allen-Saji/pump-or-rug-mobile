@@ -15,6 +15,48 @@ const placeBetSchema = z.object({
 
 app.use("/*", authMiddleware);
 
+// Step 1: Validate + build unsigned tx (no DB write)
+app.post("/prepare", async (c) => {
+  const body = await c.req.json();
+  const parsed = placeBetSchema.safeParse(body);
+
+  if (!parsed.success) {
+    const details: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      details[issue.path.join(".")] = issue.message;
+    }
+    throw new ValidationError("Invalid bet data", details);
+  }
+
+  const userId = c.get("userId");
+  const prepared = await betService.prepareBet(userId, parsed.data);
+  return c.json(prepared);
+});
+
+const commitBetSchema = placeBetSchema.extend({
+  txSignature: z.string().min(1).optional(),
+});
+
+// Step 2: Commit bet to DB after on-chain tx succeeds
+app.post("/commit", async (c) => {
+  const body = await c.req.json();
+  const parsed = commitBetSchema.safeParse(body);
+
+  if (!parsed.success) {
+    const details: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      details[issue.path.join(".")] = issue.message;
+    }
+    throw new ValidationError("Invalid bet data", details);
+  }
+
+  const userId = c.get("userId");
+  const { txSignature, ...betInput } = parsed.data;
+  const bet = await betService.commitBet(userId, betInput, txSignature);
+  return c.json(bet, 201);
+});
+
+// Legacy: place bet directly (no on-chain signing)
 app.post("/", async (c) => {
   const body = await c.req.json();
   const parsed = placeBetSchema.safeParse(body);
@@ -30,21 +72,6 @@ app.post("/", async (c) => {
   const userId = c.get("userId");
   const bet = await betService.placeBet(userId, parsed.data);
   return c.json(bet, 201);
-});
-
-const confirmBetSchema = z.object({
-  txSignature: z.string().min(1),
-});
-
-app.post("/:id/confirm", async (c) => {
-  const body = await c.req.json();
-  const parsed = confirmBetSchema.safeParse(body);
-  if (!parsed.success) {
-    throw new ValidationError("Invalid confirmation data");
-  }
-  const betId = c.req.param("id");
-  await betService.confirmBet(betId, parsed.data.txSignature);
-  return c.json({ ok: true });
 });
 
 app.get("/mine", (c) => {

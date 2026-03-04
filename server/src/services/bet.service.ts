@@ -21,10 +21,18 @@ import {
 } from "./solana.service";
 
 export const betService = {
-  async placeBet(userId: string, input: PlaceBetInput): Promise<Bet & { unsignedTx?: string }> {
+  /** Validate + build unsigned tx without saving anything to DB */
+  async prepareBet(userId: string, input: PlaceBetInput): Promise<{
+    unsignedTx?: string;
+    roundId: string;
+    tokenId: string;
+    tokenTicker: string;
+    side: string;
+    amount: number;
+    onchainRoundId?: number;
+  }> {
     const { roundId, tokenId, side, amount } = input;
 
-    // Validate round exists and is open
     const round = roundRepo.getById(roundId);
     if (!round) throw new NotFoundError("Round", roundId);
     if (round.status !== "open") {
@@ -34,21 +42,70 @@ export const betService = {
       throw new ConflictError("Round betting period has ended");
     }
 
-    // Validate token belongs to round
     const tokens = roundRepo.getTokensByRoundId(roundId);
     const token = tokens.find((t) => t.id === tokenId);
     if (!token) {
       throw new ValidationError("Token does not belong to this round");
     }
 
-    // Validate no duplicate bet on same token
     if (betRepo.existsForUserAndToken(userId, tokenId)) {
       throw new ConflictError("Already placed a bet on this token");
     }
 
-    // Validate amount
     if (amount < 0.01 || amount > 1) {
       throw new ValidationError("Bet amount must be between 0.01 and 1 SOL");
+    }
+
+    let unsignedTx: string | undefined;
+    if (token.onchainRoundId) {
+      try {
+        const user = userRepo.getById(userId);
+        if (user?.walletAddress) {
+          unsignedTx = await this.buildPlaceBetTx(
+            token.onchainRoundId,
+            user.walletAddress,
+            side as "pump" | "rug",
+            amount
+          );
+        }
+      } catch (err) {
+        console.error("[solana] Failed to build place_bet tx:", err);
+      }
+    }
+
+    return {
+      unsignedTx,
+      roundId,
+      tokenId,
+      tokenTicker: token.ticker,
+      side,
+      amount,
+      onchainRoundId: token.onchainRoundId ?? undefined,
+    };
+  },
+
+  /** Commit bet to DB after on-chain tx succeeds */
+  async commitBet(userId: string, input: PlaceBetInput, txSignature?: string): Promise<Bet> {
+    const { roundId, tokenId, side, amount } = input;
+
+    // Re-validate (in case state changed between prepare and commit)
+    const round = roundRepo.getById(roundId);
+    if (!round) throw new NotFoundError("Round", roundId);
+    if (round.status !== "open") {
+      throw new ConflictError("Round is not open for betting");
+    }
+    if (Date.now() > round.closesAt) {
+      throw new ConflictError("Round betting period has ended");
+    }
+
+    const tokens = roundRepo.getTokensByRoundId(roundId);
+    const token = tokens.find((t) => t.id === tokenId);
+    if (!token) {
+      throw new ValidationError("Token does not belong to this round");
+    }
+
+    if (betRepo.existsForUserAndToken(userId, tokenId)) {
+      throw new ConflictError("Already placed a bet on this token");
     }
 
     const bet = {
@@ -72,22 +129,9 @@ export const betService = {
       round.totalBets + 1
     );
 
-    // Construct unsigned on-chain transaction if token has on-chain round
-    let unsignedTx: string | undefined;
-    if (token.onchainRoundId) {
-      try {
-        const user = userRepo.getById(userId);
-        if (user?.walletAddress) {
-          unsignedTx = await this.buildPlaceBetTx(
-            token.onchainRoundId,
-            user.walletAddress,
-            side as "pump" | "rug",
-            amount
-          );
-        }
-      } catch (err) {
-        console.error("[solana] Failed to build place_bet tx:", err);
-      }
+    // Mark on-chain status if tx signature provided
+    if (txSignature) {
+      betRepo.updateOnchainStatus(bet.id, txSignature, "confirmed");
     }
 
     return {
@@ -95,11 +139,17 @@ export const betService = {
       roundId: bet.roundId,
       tokenId: bet.tokenId,
       tokenTicker: token.ticker,
-      side: bet.side,
+      side: bet.side as "pump" | "rug",
       amount: bet.amount,
       placedAt: bet.placedAt,
-      unsignedTx,
     };
+  },
+
+  /** Legacy: place bet directly (kept for non-on-chain fallback) */
+  async placeBet(userId: string, input: PlaceBetInput): Promise<Bet & { unsignedTx?: string }> {
+    const prepared = await this.prepareBet(userId, input);
+    const bet = await this.commitBet(userId, input);
+    return { ...bet, unsignedTx: prepared.unsignedTx };
   },
 
   async buildPlaceBetTx(

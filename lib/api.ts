@@ -70,16 +70,16 @@ export const api = {
     apiFetch<Round>(`/api/rounds/${id}`),
 
   // Bets (auth required)
-  placeBet: (data: PlaceBetInput) =>
-    apiFetch<Bet & { unsignedTx?: string }>("/api/bets", {
+  prepareBet: (data: PlaceBetInput) =>
+    apiFetch<{ unsignedTx?: string; roundId: string; tokenId: string; tokenTicker: string; side: string; amount: number }>("/api/bets/prepare", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  confirmBet: (betId: string, txSignature: string) =>
-    apiFetch<{ ok: boolean }>(`/api/bets/${betId}/confirm`, {
+  commitBet: (data: PlaceBetInput & { txSignature?: string }) =>
+    apiFetch<Bet>("/api/bets/commit", {
       method: "POST",
-      body: JSON.stringify({ txSignature }),
+      body: JSON.stringify(data),
     }),
 
   getMyBets: (roundId?: string) =>
