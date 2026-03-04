@@ -9,6 +9,7 @@ import LottieView from "lottie-react-native";
 import { router } from "expo-router";
 import { Colors, Gradients, Glows } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
+import { useWallet } from "@/lib/wallet";
 import { proxyImageUrl } from "@/lib/utils";
 import type { BetSide, Token } from "@/lib/types";
 
@@ -33,6 +34,7 @@ export function BetSheet({
   const [activeStake, setActiveStake] = useState<number | null>(0.1);
   const [confirmed, setConfirmed] = useState(false);
   const { authenticated } = useAuth();
+  const { activeWallet, externalWalletName } = useWallet();
   const isPump = side === "pump";
   const color = isPump ? Colors.pump : Colors.rug;
   const glow = isPump ? Glows.pump : Glows.rug;
@@ -234,6 +236,16 @@ export function BetSheet({
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
+
+            {/* Signing wallet indicator */}
+            {authenticated && (
+              <Text className="text-center font-mono text-[10px] mt-2" style={{ color: Colors.whiteDim }}>
+                Signing with{" "}
+                {activeWallet === "external"
+                  ? externalWalletName ?? "External Wallet"
+                  : "Embedded Wallet"}
+              </Text>
+            )}
           </View>
         </LinearGradient>
       </View>

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { usePrivy, useLoginWithOAuth, useEmbeddedSolanaWallet } from "@privy-io/expo";
 import type { OAuthProviderID } from "@privy-io/expo";
 import { setAccessTokenGetter, api } from "./api";
+import { useWallet } from "./wallet";
 
 export type AuthProvider = "google" | "twitter" | "apple";
 
@@ -9,6 +10,7 @@ export function useAuth() {
   const { user, isReady, logout, getAccessToken } = usePrivy();
   const { login, state: oauthState } = useLoginWithOAuth();
   const solanaWallet = useEmbeddedSolanaWallet();
+  const { activeAddress, activeWallet, externalWalletName } = useWallet();
   const creatingWallet = useRef(false);
   const registered = useRef(false);
 
@@ -55,24 +57,8 @@ export function useAuth() {
     }
   }, [authenticated, solanaWallet.status]);
 
-  const walletAddress =
-    solanaWallet.status === "connected"
-      ? solanaWallet.wallets[0]?.address ?? null
-      : null;
-
-  // Sync wallet address to server once connected
-  const walletSynced = useRef(false);
-  useEffect(() => {
-    if (authenticated && walletAddress && !walletSynced.current) {
-      walletSynced.current = true;
-      api.updateWallet(walletAddress).catch((err) => {
-        console.log("[auth] Wallet sync:", err?.message || "ok");
-      });
-    }
-    if (!authenticated) {
-      walletSynced.current = false;
-    }
-  }, [authenticated, walletAddress]);
+  // walletAddress now comes from the WalletProvider (respects active wallet)
+  const walletAddress = activeAddress;
 
   const truncatedAddress = walletAddress
     ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
@@ -94,6 +80,8 @@ export function useAuth() {
     walletAddress,
     truncatedAddress,
     walletStatus: solanaWallet.status,
+    activeWallet,
+    externalWalletName,
     login: loginWithProvider,
     logout,
     oauthLoading: oauthState.status === "loading",

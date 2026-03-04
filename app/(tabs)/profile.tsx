@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Switch, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -8,6 +8,7 @@ import * as Haptics from "expo-haptics";
 import { Colors, Gradients, Glows } from "@/constants/theme";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
+import { useWallet } from "@/lib/wallet";
 import { useSolanaSignAndSend } from "@/lib/solana";
 import { GlowCard } from "@/components/GlowCard";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
@@ -19,6 +20,15 @@ export default function ProfileScreen() {
   const [claimError, setClaimError] = useState<string | null>(null);
   const { authenticated, user, walletAddress, truncatedAddress, logout } =
     useAuth();
+  const {
+    activeWallet,
+    externalAddress,
+    externalWalletName,
+    connectExternal,
+    disconnectExternal,
+    switchWallet,
+  } = useWallet();
+  const [connectingExternal, setConnectingExternal] = useState(false);
 
   // Load bets when authenticated
   useEffect(() => {
@@ -133,9 +143,113 @@ export default function ProfileScreen() {
           </View>
         </AnimatedEntry>
 
+        {/* Wallet management */}
+        {authenticated && (
+          <AnimatedEntry index={1}>
+            <View className="mb-4">
+              <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
+                Wallet
+              </Text>
+              <GlowCard borderColor={Colors.dark300 + "30"} className="p-3">
+                {/* Active wallet indicator */}
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-white/60 font-mono text-xs">
+                    Signing with
+                  </Text>
+                  <Text className="text-white font-mono text-xs font-bold">
+                    {activeWallet === "external"
+                      ? externalWalletName ?? "External"
+                      : "Embedded Wallet"}
+                  </Text>
+                </View>
+
+                {/* External wallet section */}
+                {externalAddress ? (
+                  <>
+                    {/* Toggle between embedded and external */}
+                    <View className="flex-row items-center justify-between py-2 border-t border-white/10">
+                      <View className="flex-row items-center gap-2">
+                        <Ionicons name="swap-horizontal" size={14} color={Colors.pump} />
+                        <Text className="text-white font-mono text-xs">
+                          Use external wallet
+                        </Text>
+                      </View>
+                      <Switch
+                        value={activeWallet === "external"}
+                        onValueChange={(v) => switchWallet(v ? "external" : "embedded")}
+                        trackColor={{ false: Colors.dark300, true: Colors.pump + "60" }}
+                        thumbColor={activeWallet === "external" ? Colors.pump : Colors.whiteDim}
+                      />
+                    </View>
+
+                    {/* External address */}
+                    <View className="flex-row items-center justify-between py-2 border-t border-white/10">
+                      <View>
+                        <Text className="text-white/40 font-mono text-[10px]">
+                          {externalWalletName}
+                        </Text>
+                        <Text className="text-white/60 font-mono text-xs">
+                          {externalAddress.slice(0, 6)}...{externalAddress.slice(-4)}
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          disconnectExternal();
+                        }}
+                      >
+                        <Text className="text-rug font-mono text-xs font-bold">
+                          Disconnect
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  Platform.OS === "android" && (
+                    <Pressable
+                      onPress={async () => {
+                        setConnectingExternal(true);
+                        try {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                          await connectExternal();
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        } catch (err: any) {
+                          console.log("[wallet] Connect error:", err?.message);
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                        } finally {
+                          setConnectingExternal(false);
+                        }
+                      }}
+                      disabled={connectingExternal}
+                      className="mt-1"
+                    >
+                      <LinearGradient
+                        colors={[Colors.dark200, Colors.dark300]}
+                        className="flex-row items-center justify-center gap-2 rounded-lg py-2.5"
+                        style={{ borderWidth: 1, borderColor: Colors.dark300 }}
+                      >
+                        {connectingExternal ? (
+                          <ActivityIndicator size="small" color={Colors.pump} />
+                        ) : (
+                          <>
+                            <Ionicons name="wallet-outline" size={16} color={Colors.pump} />
+                            <Text className="text-white font-mono text-sm font-bold">
+                              Connect External Wallet
+                            </Text>
+                          </>
+                        )}
+                      </LinearGradient>
+                    </Pressable>
+                  )
+                )}
+              </GlowCard>
+            </View>
+          </AnimatedEntry>
+        )}
+
         {/* Bet history */}
         {userBets.length > 0 && (
-          <AnimatedEntry index={1}>
+          <AnimatedEntry index={2}>
             <View className="mt-2 mb-8">
               <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
                 Bet History
@@ -246,7 +360,7 @@ export default function ProfileScreen() {
         )}
 
         {/* Logout */}
-        <AnimatedEntry index={2}>
+        <AnimatedEntry index={3}>
           <View className="mb-12">
             <Pressable
               onPress={logout}
