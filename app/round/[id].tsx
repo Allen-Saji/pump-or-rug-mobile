@@ -2,11 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import LottieView from "lottie-react-native";
 import * as Haptics from "expo-haptics";
-import { Colors, Gradients, Glows } from "@/constants/theme";
+import { Colors } from "@/constants/theme";
 import { useStore } from "@/lib/store";
 import { GlowCard } from "@/components/GlowCard";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
@@ -56,9 +55,9 @@ export default function RoundDetailScreen() {
         style={{ backgroundColor: Colors.dark }}
       >
         {/* Header skeleton */}
-        <LinearGradient
-          colors={Gradients.headerBg}
+        <View
           className="flex-row items-center px-4 py-3 gap-3"
+          style={{ backgroundColor: Colors.dark }}
         >
           <View
             className="w-9 h-9 rounded-full"
@@ -68,7 +67,7 @@ export default function RoundDetailScreen() {
             <View style={{ width: 120, height: 18, backgroundColor: Colors.dark200, borderRadius: 6 }} />
             <View style={{ width: 60, height: 12, backgroundColor: Colors.dark200, borderRadius: 4 }} />
           </View>
-        </LinearGradient>
+        </View>
         <SkeletonRoundDetail />
       </SafeAreaView>
     );
@@ -86,9 +85,9 @@ export default function RoundDetailScreen() {
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.dark }}>
       {/* Header */}
-      <LinearGradient
-        colors={Gradients.headerBg}
+      <View
         className="flex-row items-center px-4 py-3 gap-3"
+        style={{ backgroundColor: Colors.dark }}
       >
         <Pressable
           onPress={() => router.back()}
@@ -110,7 +109,7 @@ export default function RoundDetailScreen() {
         {isOpen && (
           <CountdownTimer targetTime={currentRound.closesAt} label="Closes" />
         )}
-      </LinearGradient>
+      </View>
 
       <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
         {/* Pool stats */}
@@ -137,7 +136,6 @@ export default function RoundDetailScreen() {
                   className="font-bold font-mono"
                   style={{
                     color: pnl >= 0 ? Colors.pump : Colors.rug,
-                    ...(pnl >= 0 ? Glows.pumpSubtle : Glows.rugSubtle),
                   }}
                 >
                   {pnl >= 0 ? "+" : ""}
@@ -274,11 +272,9 @@ export default function RoundDetailScreen() {
                         disabled={claiming === bet.id}
                         style={{ marginTop: 4 }}
                       >
-                        <LinearGradient
-                          colors={Gradients.pumpButton}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
+                        <View
                           className="rounded-md px-3 py-1"
+                          style={{ backgroundColor: Colors.pump }}
                         >
                           {claiming === bet.id ? (
                             <ActivityIndicator size="small" color={Colors.dark} />
@@ -287,7 +283,7 @@ export default function RoundDetailScreen() {
                               Claim
                             </Text>
                           )}
-                        </LinearGradient>
+                        </View>
                       </Pressable>
                     )}
                     {bet.claimed && (

@@ -1,7 +1,7 @@
 import { View, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Colors, Gradients, Glows, type GradientColors } from "@/constants/theme";
+import { Colors, Gradients, type GradientColors } from "@/constants/theme";
 import { AnimatedEntry } from "./AnimatedEntry";
 import type { LeaderboardEntry } from "@/lib/types";
 
@@ -34,7 +34,7 @@ export function LeaderboardRow({ entry, index = 0 }: LeaderboardRowProps) {
         {isTop3 ? (
           <Ionicons name="medal" size={22} color={medalColor} />
         ) : (
-          <Text className="text-white/60 font-mono font-bold text-sm">
+          <Text style={{ color: Colors.whiteDim }} className="font-mono font-bold text-sm">
             {entry.rank}
           </Text>
         )}
@@ -44,9 +44,9 @@ export function LeaderboardRow({ entry, index = 0 }: LeaderboardRowProps) {
       <View
         className="w-8 h-8 rounded-full items-center justify-center mr-3"
         style={{
-          backgroundColor: isTop3 ? medalColor + "20" : Colors.dark300,
+          backgroundColor: isTop3 ? medalColor + "15" : Colors.dark300,
           borderWidth: isTop3 ? 1.5 : 0,
-          borderColor: isTop3 ? medalColor + "50" : "transparent",
+          borderColor: isTop3 ? medalColor + "40" : "transparent",
         }}
       >
         <Text
@@ -68,7 +68,7 @@ export function LeaderboardRow({ entry, index = 0 }: LeaderboardRowProps) {
         >
           {entry.displayName}
           {entry.isCurrentUser && (
-            <Text className="text-white/40"> (you)</Text>
+            <Text style={{ color: Colors.whiteDim }}> (you)</Text>
           )}
         </Text>
       </View>
@@ -77,7 +77,7 @@ export function LeaderboardRow({ entry, index = 0 }: LeaderboardRowProps) {
       {entry.winStreak > 0 && (
         <View className="flex-row items-center gap-0.5 mr-3">
           <Ionicons name="flame" size={12} color={Colors.rug} />
-          <Text className="text-white/60 font-mono text-xs">
+          <Text style={{ color: Colors.whiteDim }} className="font-mono text-xs">
             {entry.winStreak}
           </Text>
         </View>
@@ -93,7 +93,6 @@ export function LeaderboardRow({ entry, index = 0 }: LeaderboardRowProps) {
   const containerStyle = {
     borderWidth: entry.isCurrentUser ? 1 : 0,
     borderColor: Colors.pump + "30",
-    ...(entry.isCurrentUser ? Glows.pumpSubtle : {}),
   };
 
   return (
@@ -113,7 +112,7 @@ export function LeaderboardRow({ entry, index = 0 }: LeaderboardRowProps) {
           className="px-4 py-3 rounded-xl mb-1.5"
           style={{
             backgroundColor: entry.isCurrentUser
-              ? Colors.pump + "10"
+              ? Colors.pump + "08"
               : Colors.dark100,
             ...containerStyle,
           }}

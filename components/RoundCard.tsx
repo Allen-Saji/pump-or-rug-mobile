@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
-import { Colors, Gradients, Glows } from "@/constants/theme";
+import { Colors } from "@/constants/theme";
 import { GlowCard } from "./GlowCard";
 import { AnimatedEntry } from "./AnimatedEntry";
 import { CountdownTimer } from "./CountdownTimer";
@@ -50,7 +50,6 @@ function PulsingDot({ color }: { color: string }) {
           height: 8,
           borderRadius: 4,
           backgroundColor: color,
-          ...Glows.pumpSubtle,
         },
         style,
       ]}
@@ -67,8 +66,7 @@ export function RoundCard({ round, onBet, index = 0, betsDisabled }: RoundCardPr
     <AnimatedEntry index={index}>
       <Pressable onPress={() => router.push(`/round/${round.id}`)}>
         <GlowCard
-          glowColor={isOpen ? Colors.pump : undefined}
-          borderColor={isOpen ? Colors.pump + "40" : Colors.dark300 + "40"}
+          borderColor={isOpen ? Colors.pump + "60" : Colors.dark300}
           className="p-4 mb-4"
         >
           {/* Header */}
@@ -78,7 +76,7 @@ export function RoundCard({ round, onBet, index = 0, betsDisabled }: RoundCardPr
                 Round #{round.roundNumber}
               </Text>
               <View className="flex-row items-center gap-1.5 rounded-full px-2 py-0.5"
-                style={{ backgroundColor: status.color + "20" }}
+                style={{ backgroundColor: status.color + "15" }}
               >
                 {isOpen && <PulsingDot color={status.color} />}
                 <Text

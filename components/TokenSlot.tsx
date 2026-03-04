@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { View, Text, Image } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Colors, Gradients } from "@/constants/theme";
+import { Colors } from "@/constants/theme";
 import { PumpRugButton } from "./PumpRugButton";
 import { ResultBadge } from "./ResultBadge";
 import { proxyImageUrl } from "@/lib/utils";
@@ -22,18 +21,16 @@ const platformColors: Record<string, string> = {
 };
 
 export function TokenSlot({ token, isOpen, onPump, onRug, disabled }: TokenSlotProps) {
-  const platColor = platformColors[token.platform] ?? Colors.dark300;
+  const platColor = platformColors[token.platform] ?? Colors.dark400;
   const [imgError, setImgError] = useState(false);
 
   return (
-    <LinearGradient
-      colors={[Colors.dark200, Colors.dark200 + "80"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       className="rounded-xl p-3 mb-2"
       style={{
+        backgroundColor: Colors.dark200,
         borderWidth: 1,
-        borderColor: Colors.dark300 + "60",
+        borderColor: Colors.dark300,
       }}
     >
       <View className="flex-row items-center justify-between mb-2">
@@ -43,7 +40,7 @@ export function TokenSlot({ token, isOpen, onPump, onRug, disabled }: TokenSlotP
             className="w-9 h-9 rounded-full items-center justify-center overflow-hidden"
             style={{
               borderWidth: 2,
-              borderColor: platColor + "60",
+              borderColor: platColor + "40",
               backgroundColor: Colors.dark300,
             }}
           >
@@ -68,11 +65,9 @@ export function TokenSlot({ token, isOpen, onPump, onRug, disabled }: TokenSlotP
               {token.ticker}
             </Text>
             <View className="flex-row items-center gap-1.5 mt-0.5">
-              <LinearGradient
-                colors={[platColor + "30", platColor + "10"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+              <View
                 className="rounded px-1.5 py-0.5"
+                style={{ backgroundColor: platColor + "18" }}
               >
                 <Text
                   className="text-[10px] font-mono"
@@ -80,7 +75,7 @@ export function TokenSlot({ token, isOpen, onPump, onRug, disabled }: TokenSlotP
                 >
                   {token.platform}
                 </Text>
-              </LinearGradient>
+              </View>
             </View>
           </View>
         </View>
@@ -115,6 +110,6 @@ export function TokenSlot({ token, isOpen, onPump, onRug, disabled }: TokenSlotP
           </View>
         </View>
       )}
-    </LinearGradient>
+    </View>
   );
 }

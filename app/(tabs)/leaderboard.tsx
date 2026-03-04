@@ -1,14 +1,7 @@
 import { useEffect } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from "react-native-reanimated";
-import { Colors, Gradients } from "@/constants/theme";
+import { Colors } from "@/constants/theme";
 import { useStore } from "@/lib/store";
 import { LeaderboardRow } from "@/components/LeaderboardRow";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
@@ -45,23 +38,13 @@ export default function LeaderboardScreen() {
   return (
     <SafeAreaView className="flex-1" edges={["top"]} style={{ backgroundColor: Colors.dark }}>
       {/* Header */}
-      <LinearGradient
-        colors={Gradients.headerBg}
-        className="px-4 pt-3 pb-2"
-      >
+      <View className="px-4 pt-3 pb-2" style={{ backgroundColor: Colors.dark }}>
         <AnimatedEntry>
-          <Text
-            className="text-white font-bold font-mono text-2xl"
-            style={{
-              textShadowColor: Colors.pump + "30",
-              textShadowOffset: { width: 0, height: 0 },
-              textShadowRadius: 8,
-            }}
-          >
+          <Text className="text-white font-bold font-mono text-2xl">
             Leaderboard
           </Text>
         </AnimatedEntry>
-      </LinearGradient>
+      </View>
 
       {/* Period tabs */}
       <AnimatedEntry index={1}>
@@ -72,30 +55,24 @@ export default function LeaderboardScreen() {
               <Pressable
                 key={p.key}
                 onPress={() => setLeaderboardPeriod(p.key)}
-                className="flex-1 rounded-lg overflow-hidden"
+                className="flex-1 rounded-lg"
+                style={{
+                  paddingVertical: 8,
+                  alignItems: "center",
+                  backgroundColor: isActive ? Colors.pump + "12" : Colors.dark200,
+                  borderWidth: 1,
+                  borderColor: isActive ? Colors.pump + "40" : Colors.dark300,
+                  borderRadius: 8,
+                }}
               >
-                <LinearGradient
-                  colors={
-                    isActive
-                      ? [Colors.pump + "30", Colors.pump + "10"]
-                      : [Colors.dark200, Colors.dark200]
-                  }
-                  className="py-2 items-center"
+                <Text
+                  className="font-mono text-xs font-bold"
                   style={{
-                    borderWidth: isActive ? 1 : 0,
-                    borderColor: Colors.pump + "40",
-                    borderRadius: 8,
+                    color: isActive ? Colors.pump : Colors.whiteDim,
                   }}
                 >
-                  <Text
-                    className="font-mono text-xs font-bold"
-                    style={{
-                      color: isActive ? Colors.pump : Colors.whiteDim,
-                    }}
-                  >
-                    {p.label}
-                  </Text>
-                </LinearGradient>
+                  {p.label}
+                </Text>
               </Pressable>
             );
           })}

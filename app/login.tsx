@@ -14,7 +14,6 @@ export default function LoginScreen() {
   const { login, oauthLoading, authenticated } = useAuth();
   const [activeProvider, setActiveProvider] = useState<LoginProvider | null>(null);
 
-  // If already authenticated, navigate to home
   useEffect(() => {
     if (authenticated) {
       router.replace("/");
@@ -42,7 +41,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.dark }}>
       <View className="flex-1 px-6 justify-center">
-        {/* Back button — only show if there's a screen to go back to */}
+        {/* Back button */}
         {router.canGoBack() && (
           <Pressable
             onPress={() => router.back()}
@@ -60,7 +59,7 @@ export default function LoginScreen() {
               style={{ width: 200, height: 200 }}
               resizeMode="contain"
             />
-            <Text className="text-white/40 font-mono text-sm text-center mt-4">
+            <Text style={{ color: Colors.whiteDim }} className="font-mono text-sm text-center mt-4">
               Sign in to place bets and track your stats
             </Text>
           </View>
@@ -75,7 +74,7 @@ export default function LoginScreen() {
               disabled={!!activeProvider}
             >
               <GlowCard
-                glowColor={Colors.pump + "30"}
+                borderColor={Colors.dark300}
                 className="flex-row items-center justify-center gap-3 py-4 px-6"
               >
                 {activeProvider === "google" ? (
@@ -83,7 +82,7 @@ export default function LoginScreen() {
                 ) : (
                   <>
                     <Ionicons name="logo-google" size={20} color={Colors.white} />
-                    <Text className="text-white font-bold font-mono text-base">
+                    <Text className="text-white font-bold text-base">
                       Continue with Google
                     </Text>
                   </>
@@ -97,7 +96,7 @@ export default function LoginScreen() {
               disabled={!!activeProvider}
             >
               <GlowCard
-                glowColor={Colors.pump + "30"}
+                borderColor={Colors.dark300}
                 className="flex-row items-center justify-center gap-3 py-4 px-6"
               >
                 {activeProvider === "twitter" ? (
@@ -105,7 +104,7 @@ export default function LoginScreen() {
                 ) : (
                   <>
                     <Ionicons name="logo-twitter" size={20} color={Colors.white} />
-                    <Text className="text-white font-bold font-mono text-base">
+                    <Text className="text-white font-bold text-base">
                       Continue with X
                     </Text>
                   </>
@@ -118,7 +117,7 @@ export default function LoginScreen() {
 
         {/* Footer */}
         <AnimatedEntry index={2}>
-          <Text className="text-white/20 font-mono text-xs text-center mt-8">
+          <Text style={{ color: Colors.whiteDim, opacity: 0.5 }} className="font-mono text-xs text-center mt-8">
             Sign in to place bets and climb the leaderboard
           </Text>
         </AnimatedEntry>

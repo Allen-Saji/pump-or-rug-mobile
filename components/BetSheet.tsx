@@ -1,13 +1,12 @@
 import { useState, useCallback } from "react";
 import { View, Text, Pressable, Modal, TouchableOpacity, Image, ActivityIndicator } from "react-native";
 import Slider from "@react-native-community/slider";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import LottieView from "lottie-react-native";
 import { router } from "expo-router";
-import { Colors, Gradients, Glows } from "@/constants/theme";
+import { Colors } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
 import { proxyImageUrl } from "@/lib/utils";
 import type { BetSide, Token } from "@/lib/types";
@@ -35,7 +34,6 @@ export function BetSheet({
   const { authenticated } = useAuth();
   const isPump = side === "pump";
   const color = isPump ? Colors.pump : Colors.rug;
-  const glow = isPump ? Glows.pump : Glows.rug;
   const insets = useSafeAreaInsets();
 
   const [submitting, setSubmitting] = useState(false);
@@ -50,7 +48,6 @@ export function BetSheet({
     setSubmitting(true);
     try {
       await onConfirm(amount);
-      // Only show celebration after successful bet (including on-chain signing)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setConfirmed(true);
       setTimeout(() => {
@@ -58,7 +55,6 @@ export function BetSheet({
         handleClose();
       }, 1500);
     } catch {
-      // Error toasts are handled by the store
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setSubmitting(false);
@@ -82,7 +78,7 @@ export function BetSheet({
       onRequestClose={handleClose}
     >
       <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
-        {/* Celebration overlay — full screen centered */}
+        {/* Celebration overlay */}
         {confirmed && (
           <Animated.View
             entering={FadeIn}
@@ -105,22 +101,22 @@ export function BetSheet({
         <Pressable className="flex-1" onPress={handleClose} />
 
         {/* Sheet */}
-        <LinearGradient
-          colors={Gradients.sheetBg}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
+        <View
           className="rounded-t-3xl"
-          style={{ paddingBottom: Math.max(insets.bottom, 32) + 16 }}
+          style={{
+            backgroundColor: Colors.dark100,
+            paddingBottom: Math.max(insets.bottom, 32) + 16,
+          }}
         >
           <View className="p-5">
             {/* Handle */}
-            <View className="w-10 h-1 rounded-full self-center mb-3" style={{ backgroundColor: Colors.dark300 }} />
+            <View className="w-10 h-1 rounded-full self-center mb-3" style={{ backgroundColor: Colors.dark400 }} />
 
             {/* Header */}
             <View className="flex-row items-center gap-3 mb-4">
               <View
                 className="w-10 h-10 rounded-full items-center justify-center overflow-hidden"
-                style={{ backgroundColor: color + "20" }}
+                style={{ backgroundColor: color + "15" }}
               >
                 {token.imageUrl ? (
                   <Image
@@ -138,7 +134,7 @@ export function BetSheet({
                 <Text className="text-white font-bold font-mono text-lg">
                   {isPump ? "PUMP" : "RUG"} {token.ticker}
                 </Text>
-                <Text className="text-white/50 text-xs font-mono">
+                <Text style={{ color: Colors.whiteDim }} className="text-xs font-mono">
                   {token.platform}
                 </Text>
               </View>
@@ -161,9 +157,9 @@ export function BetSheet({
                       flex: 1,
                       paddingVertical: 8,
                       alignItems: "center",
-                      backgroundColor: isActive ? color + "20" : Colors.dark200,
-                      borderWidth: isActive ? 1 : 1,
-                      borderColor: isActive ? color : "transparent",
+                      backgroundColor: isActive ? color + "15" : Colors.dark200,
+                      borderWidth: 1,
+                      borderColor: isActive ? color : Colors.dark300,
                       borderRadius: 8,
                     }}
                   >
@@ -192,7 +188,7 @@ export function BetSheet({
                 maximumValue={1}
                 step={0.01}
                 minimumTrackTintColor={color}
-                maximumTrackTintColor={Colors.dark300}
+                maximumTrackTintColor={Colors.dark400}
                 thumbTintColor={color}
               />
             </View>
@@ -200,7 +196,7 @@ export function BetSheet({
             {/* Amount + estimated payout */}
             <Text className="text-white text-center font-bold font-mono text-2xl mb-1">
               {amount.toFixed(2)}{" "}
-              <Text className="text-white/50 text-base">SOL</Text>
+              <Text style={{ color: Colors.whiteDim }} className="text-base">SOL</Text>
             </Text>
             {(() => {
               const myPool = isPump ? (token.pumpPool ?? 0) : (token.rugPool ?? 0);
@@ -231,30 +227,26 @@ export function BetSheet({
               activeOpacity={0.85}
               onPress={handleConfirm}
               disabled={submitting}
-              style={{ borderRadius: 14, overflow: "hidden", opacity: submitting ? 0.6 : 1, ...glow }}
+              style={{
+                borderRadius: 14,
+                overflow: "hidden",
+                opacity: submitting ? 0.6 : 1,
+                backgroundColor: color,
+                paddingVertical: 14,
+                alignItems: "center",
+              }}
             >
-              <LinearGradient
-                colors={
-                  isPump
-                    ? Gradients.pumpButton
-                    : Gradients.rugButton
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                className="py-3.5 items-center"
-              >
-                {submitting ? (
-                  <ActivityIndicator color={isPump ? Colors.dark : Colors.white} />
-                ) : (
-                  <Text className="font-bold font-mono text-lg" style={{ color: isPump ? Colors.dark : Colors.white }}>
-                    Confirm {isPump ? "PUMP" : "RUG"}
-                  </Text>
-                )}
-              </LinearGradient>
+              {submitting ? (
+                <ActivityIndicator color={isPump ? Colors.dark : Colors.white} />
+              ) : (
+                <Text className="font-bold font-mono text-lg" style={{ color: isPump ? Colors.dark : Colors.white }}>
+                  Confirm {isPump ? "PUMP" : "RUG"}
+                </Text>
+              )}
             </TouchableOpacity>
 
           </View>
-        </LinearGradient>
+        </View>
       </View>
     </Modal>
   );

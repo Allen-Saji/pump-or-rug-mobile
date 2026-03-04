@@ -7,10 +7,9 @@ import {
   Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Colors, Gradients, Glows } from "@/constants/theme";
+import { Colors } from "@/constants/theme";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { useWallet } from "@/lib/wallet";
@@ -42,12 +41,10 @@ export default function HomeScreen() {
 
     const msUntilClose = openRound.closesAt - Date.now();
     if (msUntilClose <= 0) {
-      // Already expired — refresh now
       loadRounds();
       return;
     }
 
-    // Refresh shortly after the round closes
     const timer = setTimeout(() => {
       loadRounds();
     }, msUntilClose + 2000);
@@ -89,9 +86,9 @@ export default function HomeScreen() {
   return (
     <SafeAreaView className="flex-1" edges={["top"]} style={{ backgroundColor: Colors.dark }}>
       {/* Header */}
-      <LinearGradient
-        colors={Gradients.headerBg}
+      <View
         className="flex-row items-center justify-between px-4 py-3"
+        style={{ backgroundColor: Colors.dark }}
       >
         <Text className="font-mono text-2xl font-bold">
           <Text style={{ color: Colors.pump }}>PUMP</Text>
@@ -115,10 +112,9 @@ export default function HomeScreen() {
               onPress={handleConnectPress}
               className="rounded-full px-3 py-1.5"
               style={{
-                backgroundColor: Colors.pump + "20",
+                backgroundColor: Colors.pump + "12",
                 borderWidth: 1,
-                borderColor: Colors.pump + "40",
-                ...Glows.pumpSubtle,
+                borderColor: Colors.pump + "30",
               }}
             >
               <Text
@@ -147,7 +143,7 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
         )}
-      </LinearGradient>
+      </View>
 
       <ScrollView
         className="flex-1 px-4"
@@ -174,20 +170,16 @@ export default function HomeScreen() {
           <View className="mb-2 mt-2">
             <AnimatedEntry>
               <View className="flex-row items-center gap-2 mb-2">
-                <LinearGradient
-                  colors={[Colors.pump + "40", "transparent"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
+                <View
                   className="h-[1px] flex-1"
+                  style={{ backgroundColor: Colors.dark300 }}
                 />
-                <Text className="text-white/40 font-mono text-xs uppercase">
+                <Text style={{ color: Colors.whiteDim }} className="font-mono text-xs uppercase">
                   Live Round
                 </Text>
-                <LinearGradient
-                  colors={["transparent", Colors.pump + "40"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
+                <View
                   className="h-[1px] flex-1"
+                  style={{ backgroundColor: Colors.dark300 }}
                 />
               </View>
             </AnimatedEntry>
@@ -205,20 +197,16 @@ export default function HomeScreen() {
           <View className="mb-8">
             <AnimatedEntry index={1}>
               <View className="flex-row items-center gap-2 mb-2">
-                <LinearGradient
-                  colors={[Colors.whiteDim + "30", "transparent"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
+                <View
                   className="h-[1px] flex-1"
+                  style={{ backgroundColor: Colors.dark300 }}
                 />
-                <Text className="text-white/40 font-mono text-xs uppercase">
+                <Text style={{ color: Colors.whiteDim }} className="font-mono text-xs uppercase">
                   Recent Rounds
                 </Text>
-                <LinearGradient
-                  colors={["transparent", Colors.whiteDim + "30"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
+                <View
                   className="h-[1px] flex-1"
+                  style={{ backgroundColor: Colors.dark300 }}
                 />
               </View>
             </AnimatedEntry>

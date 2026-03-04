@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Clipboard } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
-import { Colors, Gradients, Glows } from "@/constants/theme";
+import { Colors } from "@/constants/theme";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { useWallet } from "@/lib/wallet";
@@ -23,7 +22,6 @@ export default function ProfileScreen() {
     useAuth();
   const { solBalance, refreshBalance } = useWallet();
 
-  // Load bets when authenticated
   useEffect(() => {
     if (authenticated) loadUserBets();
   }, [authenticated]);
@@ -36,7 +34,7 @@ export default function ProfileScreen() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Guest view — prompt to log in
+  // Guest view
   if (!authenticated) {
     return (
       <SafeAreaView
@@ -47,30 +45,30 @@ export default function ProfileScreen() {
         <View className="flex-1 items-center justify-center px-6">
           <AnimatedEntry>
             <View className="items-center">
-              <LinearGradient
-                colors={[Colors.pump + "30", Colors.dark100]}
+              <View
                 className="w-20 h-20 rounded-full items-center justify-center mb-4"
+                style={{ backgroundColor: Colors.dark200 }}
               >
                 <Ionicons name="person" size={32} color={Colors.whiteDim} />
-              </LinearGradient>
+              </View>
               <Text className="text-white font-bold font-mono text-lg mb-2">
                 Not signed in
               </Text>
-              <Text className="text-white/40 font-mono text-sm text-center mb-6">
+              <Text style={{ color: Colors.whiteDim }} className="font-mono text-sm text-center mb-6">
                 Sign in to track your bets, stats, and climb the leaderboard
               </Text>
-              <Pressable onPress={() => router.push("/login")}>
-                <LinearGradient
-                  colors={Gradients.pumpButton}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  className="rounded-xl px-8 py-3"
-                  style={Glows.pumpSubtle}
-                >
-                  <Text className="text-dark font-bold font-mono text-base">
-                    Sign In
-                  </Text>
-                </LinearGradient>
+              <Pressable
+                onPress={() => router.push("/login")}
+                style={{
+                  backgroundColor: Colors.pump,
+                  borderRadius: 12,
+                  paddingHorizontal: 32,
+                  paddingVertical: 12,
+                }}
+              >
+                <Text className="font-bold font-mono text-base" style={{ color: Colors.dark }}>
+                  Sign In
+                </Text>
               </Pressable>
             </View>
           </AnimatedEntry>
@@ -79,7 +77,7 @@ export default function ProfileScreen() {
     );
   }
 
-  // Derive display name from Privy user linked accounts
+  // Derive display name
   const googleAccount = user?.linked_accounts?.find(
     (a) => a.type === "google_oauth"
   );
@@ -105,13 +103,13 @@ export default function ProfileScreen() {
         {/* Header */}
         <AnimatedEntry>
           <View className="items-center pt-4 pb-6">
-            {/* Avatar with gradient ring */}
-            <LinearGradient
-              colors={[Colors.pump, Colors.pump + "40"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            {/* Avatar with solid green ring */}
+            <View
               className="w-[84px] h-[84px] rounded-full items-center justify-center mb-3"
-              style={Glows.pumpSubtle}
+              style={{
+                borderWidth: 2,
+                borderColor: Colors.pump,
+              }}
             >
               <View
                 className="w-20 h-20 rounded-full items-center justify-center"
@@ -121,7 +119,7 @@ export default function ProfileScreen() {
                   {initials}
                 </Text>
               </View>
-            </LinearGradient>
+            </View>
 
             <Text className="text-white font-bold font-mono text-lg">
               {displayName}
@@ -152,17 +150,17 @@ export default function ProfileScreen() {
           </View>
         </AnimatedEntry>
 
-        {/* Wallet section — copy address for funding */}
+        {/* Wallet section */}
         {walletAddress && (
           <AnimatedEntry index={1}>
             <View className="mb-4">
-              <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
+              <Text style={{ color: Colors.whiteDim }} className="font-mono text-xs mb-2 uppercase">
                 Wallet
               </Text>
-              <GlowCard borderColor={Colors.dark300 + "30"} className="p-3">
+              <GlowCard borderColor={Colors.dark300} className="p-3">
                 {/* Balance */}
                 <View className="flex-row items-center justify-between mb-3">
-                  <Text className="text-white/50 font-mono text-xs">
+                  <Text style={{ color: Colors.whiteDim }} className="font-mono text-xs">
                     Balance
                   </Text>
                   <Pressable onPress={refreshBalance} className="flex-row items-center gap-1.5">
@@ -173,7 +171,7 @@ export default function ProfileScreen() {
                   </Pressable>
                 </View>
 
-                <Text className="text-white/50 font-mono text-xs mb-2">
+                <Text style={{ color: Colors.whiteDim }} className="font-mono text-xs mb-2">
                   Send SOL to this address to fund your bets
                 </Text>
                 <Pressable onPress={handleCopyAddress}>
@@ -212,24 +210,22 @@ export default function ProfileScreen() {
         {userBets.length > 0 && (
           <AnimatedEntry index={2}>
             <View className="mt-2 mb-8">
-              <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
+              <Text style={{ color: Colors.whiteDim }} className="font-mono text-xs mb-2 uppercase">
                 Bet History
               </Text>
               {userBets.map((bet, i) => (
                 <GlowCard
                   key={`${bet.id}-${i}`}
-                  borderColor={Colors.dark300 + "30"}
+                  borderColor={Colors.dark300}
                   className="flex-row items-center justify-between p-3 mb-1.5"
                 >
                   <View className="flex-row items-center gap-3">
-                    <LinearGradient
-                      colors={[
-                        (bet.side === "pump" ? Colors.pump : Colors.rug) +
-                          "30",
-                        (bet.side === "pump" ? Colors.pump : Colors.rug) +
-                          "10",
-                      ]}
+                    <View
                       className="w-8 h-8 rounded-full items-center justify-center"
+                      style={{
+                        backgroundColor:
+                          (bet.side === "pump" ? Colors.pump : Colors.rug) + "15",
+                      }}
                     >
                       <Ionicons
                         name={
@@ -240,12 +236,12 @@ export default function ProfileScreen() {
                           bet.side === "pump" ? Colors.pump : Colors.rug
                         }
                       />
-                    </LinearGradient>
+                    </View>
                     <View>
                       <Text className="text-white font-mono font-bold text-sm">
                         {bet.tokenTicker}
                       </Text>
-                      <Text className="text-white/40 font-mono text-[10px]">
+                      <Text style={{ color: Colors.whiteDim }} className="font-mono text-[10px]">
                         {bet.amount} SOL
                       </Text>
                     </View>
@@ -284,22 +280,21 @@ export default function ProfileScreen() {
                               }
                             }}
                             disabled={claiming === bet.id}
-                            style={{ marginTop: 4 }}
+                            style={{
+                              marginTop: 4,
+                              backgroundColor: Colors.pump,
+                              borderRadius: 6,
+                              paddingHorizontal: 12,
+                              paddingVertical: 4,
+                            }}
                           >
-                            <LinearGradient
-                              colors={Gradients.pumpButton}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 0 }}
-                              className="rounded-md px-3 py-1"
-                            >
-                              {claiming === bet.id ? (
-                                <ActivityIndicator size="small" color={Colors.dark} />
-                              ) : (
-                                <Text className="font-bold font-mono text-[10px]" style={{ color: Colors.dark }}>
-                                  Claim
-                                </Text>
-                              )}
-                            </LinearGradient>
+                            {claiming === bet.id ? (
+                              <ActivityIndicator size="small" color={Colors.dark} />
+                            ) : (
+                              <Text className="font-bold font-mono text-[10px]" style={{ color: Colors.dark }}>
+                                Claim
+                              </Text>
+                            )}
                           </Pressable>
                         )}
                         {bet.claimed && (
@@ -309,7 +304,7 @@ export default function ProfileScreen() {
                         )}
                       </>
                     ) : (
-                      <Text className="text-white/30 font-mono text-xs">
+                      <Text style={{ color: Colors.whiteDim }} className="font-mono text-xs">
                         Pending
                       </Text>
                     )}
