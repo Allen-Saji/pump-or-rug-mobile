@@ -30,7 +30,7 @@ export default function LeaderboardScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.dark }}>
+    <SafeAreaView className="flex-1" edges={["top"]} style={{ backgroundColor: Colors.dark }}>
       {/* Header */}
       <LinearGradient
         colors={Gradients.headerBg}

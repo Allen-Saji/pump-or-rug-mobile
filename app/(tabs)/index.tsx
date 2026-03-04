@@ -13,6 +13,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Colors, Gradients, Glows } from "@/constants/theme";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
+import { useWallet } from "@/lib/wallet";
 import { RoundCard } from "@/components/RoundCard";
 import { BetSheet } from "@/components/BetSheet";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
@@ -24,6 +25,7 @@ export default function HomeScreen() {
   const { rounds, loadRounds, placeBet, loading } = useStore();
   const signAndSend = useSolanaSignAndSend();
   const { authenticated, truncatedAddress } = useAuth();
+  const { solBalance, refreshBalance } = useWallet();
   const [refreshing, setRefreshing] = useState(false);
   const [betToken, setBetToken] = useState<Token | null>(null);
   const [betSide, setBetSide] = useState<BetSide | null>(null);
@@ -32,6 +34,26 @@ export default function HomeScreen() {
   useEffect(() => {
     loadRounds();
   }, []);
+
+  // Auto-refresh when the open round expires
+  useEffect(() => {
+    const openRound = rounds.find((r) => r.status === "open");
+    if (!openRound) return;
+
+    const msUntilClose = openRound.closesAt - Date.now();
+    if (msUntilClose <= 0) {
+      // Already expired — refresh now
+      loadRounds();
+      return;
+    }
+
+    // Refresh shortly after the round closes
+    const timer = setTimeout(() => {
+      loadRounds();
+    }, msUntilClose + 2000);
+
+    return () => clearTimeout(timer);
+  }, [rounds]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -52,9 +74,6 @@ export default function HomeScreen() {
   const handleConfirmBet = async (amount: number) => {
     if (betRoundId && betToken && betSide) {
       await placeBet(betRoundId, betToken.id, betSide, amount, signAndSend);
-      setBetToken(null);
-      setBetSide(null);
-      setBetRoundId(null);
     }
   };
 
@@ -68,63 +87,71 @@ export default function HomeScreen() {
   const pastRounds = rounds.filter((r) => r.status !== "open");
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.dark }}>
+    <SafeAreaView className="flex-1" edges={["top"]} style={{ backgroundColor: Colors.dark }}>
       {/* Header */}
       <LinearGradient
         colors={Gradients.headerBg}
         className="flex-row items-center justify-between px-4 py-3"
       >
-        <View className="flex-row items-center gap-2">
-          <Text
-            className="text-pump font-bold font-mono text-xl"
-            style={{
-              textShadowColor: Colors.pump + "60",
-              textShadowOffset: { width: 0, height: 0 },
-              textShadowRadius: 12,
-            }}
-          >
-            PUMP
-          </Text>
-          <Text className="text-white/30 font-mono text-xl">or</Text>
-          <Text
-            className="text-rug font-bold font-mono text-xl"
-            style={{
-              textShadowColor: Colors.rug + "60",
-              textShadowOffset: { width: 0, height: 0 },
-              textShadowRadius: 12,
-            }}
-          >
-            RUG
-          </Text>
-        </View>
+        <Text className="font-mono text-2xl font-bold">
+          <Text style={{ color: Colors.pump }}>PUMP</Text>
+          <Text style={{ color: Colors.whiteDim }}> or </Text>
+          <Text style={{ color: Colors.rug }}>RUG</Text>
+        </Text>
 
-        <Pressable
-          onPress={handleConnectPress}
-          className="rounded-full px-3 py-1.5"
-          style={{
-            backgroundColor: authenticated
-              ? Colors.pump + "20"
-              : Colors.dark200,
-            borderWidth: 1,
-            borderColor: authenticated ? Colors.pump + "40" : Colors.dark300,
-            ...(authenticated ? Glows.pumpSubtle : {}),
-          }}
-        >
-          <Text
-            className="font-mono text-xs font-bold"
+        {authenticated ? (
+          <View className="flex-row items-center gap-2">
+            {solBalance !== null && (
+              <View
+                className="rounded-full px-2.5 py-1.5"
+                style={{ backgroundColor: Colors.dark200, borderWidth: 1, borderColor: Colors.dark300 }}
+              >
+                <Text className="font-mono text-xs font-bold" style={{ color: Colors.white }}>
+                  {solBalance.toFixed(2)} SOL
+                </Text>
+              </View>
+            )}
+            <Pressable
+              onPress={handleConnectPress}
+              className="rounded-full px-3 py-1.5"
+              style={{
+                backgroundColor: Colors.pump + "20",
+                borderWidth: 1,
+                borderColor: Colors.pump + "40",
+                ...Glows.pumpSubtle,
+              }}
+            >
+              <Text
+                className="font-mono text-xs font-bold"
+                style={{ color: Colors.pump }}
+              >
+                {truncatedAddress ?? "..."}
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={handleConnectPress}
+            className="rounded-full px-3 py-1.5"
             style={{
-              color: authenticated ? Colors.pump : Colors.whiteDim,
+              backgroundColor: Colors.dark200,
+              borderWidth: 1,
+              borderColor: Colors.dark300,
             }}
           >
-            {authenticated && truncatedAddress
-              ? truncatedAddress
-              : "Connect"}
-          </Text>
-        </Pressable>
+            <Text
+              className="font-mono text-xs font-bold"
+              style={{ color: Colors.whiteDim }}
+            >
+              Connect
+            </Text>
+          </Pressable>
+        )}
       </LinearGradient>
 
       <ScrollView
         className="flex-1 px-4"
+        contentContainerStyle={{ paddingBottom: 16 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -168,6 +195,7 @@ export default function HomeScreen() {
               round={openRound}
               onBet={(tokenId, side) => handleBet(openRound.id, tokenId, side)}
               index={0}
+              betsDisabled={!authenticated}
             />
           </View>
         )}
@@ -200,6 +228,7 @@ export default function HomeScreen() {
                 round={round}
                 onBet={(tokenId, side) => handleBet(round.id, tokenId, side)}
                 index={i + 2}
+                betsDisabled={!authenticated}
               />
             ))}
           </View>
