@@ -1,25 +1,27 @@
-import { useState } from "react";
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, Pressable, ActivityIndicator, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Colors, Gradients, Glows } from "@/constants/theme";
+import { Colors } from "@/constants/theme";
 import { GlowCard } from "@/components/GlowCard";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
-import { useAuth } from "@/lib/auth";
+import { useAuth, type AuthProvider } from "@/lib/auth";
 
-type LoginProvider = "google" | "twitter";
+type LoginProvider = AuthProvider;
 
 export default function LoginScreen() {
   const { login, oauthLoading, authenticated } = useAuth();
   const [activeProvider, setActiveProvider] = useState<LoginProvider | null>(null);
 
   // If already authenticated, navigate to home
-  if (authenticated) {
-    router.replace("/");
-    return null;
-  }
+  useEffect(() => {
+    if (authenticated) {
+      router.replace("/");
+    }
+  }, [authenticated]);
+
+  if (authenticated) return null;
 
   const handleLogin = async (provider: LoginProvider) => {
     setActiveProvider(provider);
@@ -40,41 +42,25 @@ export default function LoginScreen() {
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.dark }}>
       <View className="flex-1 px-6 justify-center">
-        {/* Back button */}
-        <Pressable
-          onPress={() => router.back()}
-          className="absolute top-4 left-4 z-10 p-2"
-        >
-          <Ionicons name="close" size={24} color={Colors.whiteDim} />
-        </Pressable>
+        {/* Back button — only show if there's a screen to go back to */}
+        {router.canGoBack() && (
+          <Pressable
+            onPress={() => router.back()}
+            className="absolute top-4 left-4 z-10 p-2"
+          >
+            <Ionicons name="close" size={24} color={Colors.whiteDim} />
+          </Pressable>
+        )}
 
-        {/* Logo / Title */}
+        {/* Logo */}
         <AnimatedEntry>
           <View className="items-center mb-10">
-            <View className="flex-row items-center gap-2 mb-3">
-              <Text
-                className="text-pump font-bold font-mono text-3xl"
-                style={{
-                  textShadowColor: Colors.pump + "60",
-                  textShadowOffset: { width: 0, height: 0 },
-                  textShadowRadius: 16,
-                }}
-              >
-                PUMP
-              </Text>
-              <Text className="text-white/30 font-mono text-3xl">or</Text>
-              <Text
-                className="text-rug font-bold font-mono text-3xl"
-                style={{
-                  textShadowColor: Colors.rug + "60",
-                  textShadowOffset: { width: 0, height: 0 },
-                  textShadowRadius: 16,
-                }}
-              >
-                RUG
-              </Text>
-            </View>
-            <Text className="text-white/40 font-mono text-sm text-center">
+            <Image
+              source={require("@/assets/pumpruglogo.png")}
+              style={{ width: 200, height: 200 }}
+              resizeMode="contain"
+            />
+            <Text className="text-white/40 font-mono text-sm text-center mt-4">
               Sign in to place bets and track your stats
             </Text>
           </View>
@@ -126,13 +112,14 @@ export default function LoginScreen() {
                 )}
               </GlowCard>
             </Pressable>
+
           </View>
         </AnimatedEntry>
 
         {/* Footer */}
         <AnimatedEntry index={2}>
           <Text className="text-white/20 font-mono text-xs text-center mt-8">
-            A Solana wallet will be created for you automatically
+            Sign in to place bets and climb the leaderboard
           </Text>
         </AnimatedEntry>
       </View>
