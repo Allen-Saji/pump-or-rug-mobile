@@ -60,6 +60,20 @@ export function useAuth() {
       ? solanaWallet.wallets[0]?.address ?? null
       : null;
 
+  // Sync wallet address to server once connected
+  const walletSynced = useRef(false);
+  useEffect(() => {
+    if (authenticated && walletAddress && !walletSynced.current) {
+      walletSynced.current = true;
+      api.updateWallet(walletAddress).catch((err) => {
+        console.log("[auth] Wallet sync:", err?.message || "ok");
+      });
+    }
+    if (!authenticated) {
+      walletSynced.current = false;
+    }
+  }, [authenticated, walletAddress]);
+
   const truncatedAddress = walletAddress
     ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
     : null;

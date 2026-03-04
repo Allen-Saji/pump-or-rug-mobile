@@ -52,6 +52,13 @@ export const userRepo = {
       .get()!;
   },
 
+  updateWalletAddress(id: string, walletAddress: string) {
+    db.update(users)
+      .set({ walletAddress })
+      .where(eq(users.id, id))
+      .run();
+  },
+
   updateStats(
     id: string,
     stats: {

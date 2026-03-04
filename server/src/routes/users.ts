@@ -92,6 +92,19 @@ app.post("/", async (c) => {
 // Protected routes below
 app.use("/*", authMiddleware);
 
+app.patch("/me/wallet", async (c) => {
+  const userId = c.get("userId");
+  const body = await c.req.json();
+  const walletAddress = body?.walletAddress;
+  if (!walletAddress || typeof walletAddress !== "string") {
+    throw new ValidationError("walletAddress is required");
+  }
+  const user = userRepo.getById(userId);
+  if (!user) return c.json({ error: "User not found", code: "NOT_FOUND" }, 404);
+  userRepo.updateWalletAddress(userId, walletAddress);
+  return c.json({ ok: true });
+});
+
 app.get("/me", (c) => {
   const userId = c.get("userId");
   const user = userRepo.getById(userId);

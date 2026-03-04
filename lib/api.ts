@@ -116,4 +116,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  updateWallet: (walletAddress: string) =>
+    apiFetch<{ ok: boolean }>("/api/users/me/wallet", {
+      method: "PATCH",
+      body: JSON.stringify({ walletAddress }),
+    }),
 };
