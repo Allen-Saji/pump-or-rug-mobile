@@ -8,9 +8,9 @@ export type AuthProvider = "google" | "twitter" | "apple";
 
 export function useAuth() {
   const { user, isReady, logout, getAccessToken } = usePrivy();
-  const { login, state: oauthState } = useLoginWithOAuth();
+  const { login: oauthLogin, state: oauthState } = useLoginWithOAuth();
   const solanaWallet = useEmbeddedSolanaWallet();
-  const { activeAddress, activeWallet, externalWalletName } = useWallet();
+  const { activeAddress } = useWallet();
   const creatingWallet = useRef(false);
   const registered = useRef(false);
 
@@ -51,13 +51,26 @@ export function useAuth() {
       !creatingWallet.current
     ) {
       creatingWallet.current = true;
-      solanaWallet.create().finally(() => {
+      solanaWallet.create().catch((err) => {
+        // "already exists" is fine — race condition with Privy
+        console.log("[auth] Wallet create:", err?.message || "ok");
+      }).finally(() => {
         creatingWallet.current = false;
       });
     }
   }, [authenticated, solanaWallet.status]);
 
-  // walletAddress now comes from the WalletProvider (respects active wallet)
+  // Sync wallet address to server when authenticated + address available
+  const lastSyncedAddr = useRef<string | null>(null);
+  useEffect(() => {
+    if (authenticated && activeAddress && activeAddress !== lastSyncedAddr.current) {
+      lastSyncedAddr.current = activeAddress;
+      api.updateWallet(activeAddress).catch((err) => {
+        console.log("[auth] Wallet sync:", err?.message || "ok");
+      });
+    }
+  }, [authenticated, activeAddress]);
+
   const walletAddress = activeAddress;
 
   const truncatedAddress = walletAddress
@@ -70,7 +83,7 @@ export function useAuth() {
       twitter: "twitter",
       apple: "apple",
     };
-    await login({ provider: providerMap[provider] });
+    await oauthLogin({ provider: providerMap[provider] });
   };
 
   return {
@@ -80,8 +93,6 @@ export function useAuth() {
     walletAddress,
     truncatedAddress,
     walletStatus: solanaWallet.status,
-    activeWallet,
-    externalWalletName,
     login: loginWithProvider,
     logout,
     oauthLoading: oauthState.status === "loading",
