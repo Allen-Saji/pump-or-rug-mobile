@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Switch, Platform } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Clipboard } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -18,28 +18,30 @@ export default function ProfileScreen() {
   const { userBets, loadUserBets, claimBet, claiming } = useStore();
   const signAndSend = useSolanaSignAndSend();
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const { authenticated, user, walletAddress, truncatedAddress, logout } =
     useAuth();
-  const {
-    activeWallet,
-    externalAddress,
-    externalWalletName,
-    connectExternal,
-    disconnectExternal,
-    switchWallet,
-  } = useWallet();
-  const [connectingExternal, setConnectingExternal] = useState(false);
+  const { solBalance, refreshBalance } = useWallet();
 
   // Load bets when authenticated
   useEffect(() => {
     if (authenticated) loadUserBets();
   }, [authenticated]);
 
+  const handleCopyAddress = () => {
+    if (!walletAddress) return;
+    Clipboard.setString(walletAddress);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   // Guest view — prompt to log in
   if (!authenticated) {
     return (
       <SafeAreaView
         className="flex-1"
+        edges={["top"]}
         style={{ backgroundColor: Colors.dark }}
       >
         <View className="flex-1 items-center justify-center px-6">
@@ -95,7 +97,7 @@ export default function ProfileScreen() {
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.dark }}>
+    <SafeAreaView className="flex-1" edges={["top"]} style={{ backgroundColor: Colors.dark }}>
       <ScrollView
         className="flex-1 px-4"
         showsVerticalScrollIndicator={false}
@@ -125,123 +127,82 @@ export default function ProfileScreen() {
               {displayName}
             </Text>
 
-            {/* Wallet address */}
+            {/* Wallet address with copy button */}
             {walletAddress && (
-              <View
-                className="flex-row items-center gap-1.5 mt-1 px-3 py-1 rounded-full"
-                style={{ backgroundColor: Colors.dark200 }}
-              >
-                <Ionicons name="wallet" size={12} color={Colors.pump} />
-                <Text
-                  className="font-mono text-xs"
-                  style={{ color: Colors.pump }}
+              <Pressable onPress={handleCopyAddress}>
+                <View
+                  className="flex-row items-center gap-1.5 mt-1 px-3 py-1 rounded-full"
+                  style={{ backgroundColor: Colors.dark200 }}
                 >
-                  {truncatedAddress}
-                </Text>
-              </View>
+                  <Ionicons name="wallet" size={12} color={Colors.pump} />
+                  <Text
+                    className="font-mono text-xs"
+                    style={{ color: Colors.pump }}
+                  >
+                    {truncatedAddress}
+                  </Text>
+                  <Ionicons
+                    name={copied ? "checkmark" : "copy-outline"}
+                    size={12}
+                    color={copied ? Colors.pump : Colors.whiteDim}
+                  />
+                </View>
+              </Pressable>
             )}
           </View>
         </AnimatedEntry>
 
-        {/* Wallet management */}
-        {authenticated && (
+        {/* Wallet section — copy address for funding */}
+        {walletAddress && (
           <AnimatedEntry index={1}>
             <View className="mb-4">
               <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
                 Wallet
               </Text>
               <GlowCard borderColor={Colors.dark300 + "30"} className="p-3">
-                {/* Active wallet indicator */}
-                <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-white/60 font-mono text-xs">
-                    Signing with
+                {/* Balance */}
+                <View className="flex-row items-center justify-between mb-3">
+                  <Text className="text-white/50 font-mono text-xs">
+                    Balance
                   </Text>
-                  <Text className="text-white font-mono text-xs font-bold">
-                    {activeWallet === "external"
-                      ? externalWalletName ?? "External"
-                      : "Embedded Wallet"}
-                  </Text>
+                  <Pressable onPress={refreshBalance} className="flex-row items-center gap-1.5">
+                    <Text className="font-mono text-base font-bold" style={{ color: Colors.white }}>
+                      {solBalance !== null ? `${solBalance.toFixed(4)} SOL` : "—"}
+                    </Text>
+                    <Ionicons name="refresh-outline" size={12} color={Colors.whiteDim} />
+                  </Pressable>
                 </View>
 
-                {/* External wallet section */}
-                {externalAddress ? (
-                  <>
-                    {/* Toggle between embedded and external */}
-                    <View className="flex-row items-center justify-between py-2 border-t border-white/10">
-                      <View className="flex-row items-center gap-2">
-                        <Ionicons name="swap-horizontal" size={14} color={Colors.pump} />
-                        <Text className="text-white font-mono text-xs">
-                          Use external wallet
-                        </Text>
-                      </View>
-                      <Switch
-                        value={activeWallet === "external"}
-                        onValueChange={(v) => switchWallet(v ? "external" : "embedded")}
-                        trackColor={{ false: Colors.dark300, true: Colors.pump + "60" }}
-                        thumbColor={activeWallet === "external" ? Colors.pump : Colors.whiteDim}
-                      />
-                    </View>
-
-                    {/* External address */}
-                    <View className="flex-row items-center justify-between py-2 border-t border-white/10">
-                      <View>
-                        <Text className="text-white/40 font-mono text-[10px]">
-                          {externalWalletName}
-                        </Text>
-                        <Text className="text-white/60 font-mono text-xs">
-                          {externalAddress.slice(0, 6)}...{externalAddress.slice(-4)}
-                        </Text>
-                      </View>
-                      <Pressable
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          disconnectExternal();
-                        }}
-                      >
-                        <Text className="text-rug font-mono text-xs font-bold">
-                          Disconnect
-                        </Text>
-                      </Pressable>
-                    </View>
-                  </>
-                ) : (
-                  Platform.OS === "android" && (
-                    <Pressable
-                      onPress={async () => {
-                        setConnectingExternal(true);
-                        try {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                          await connectExternal();
-                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        } catch (err: any) {
-                          console.log("[wallet] Connect error:", err?.message);
-                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                        } finally {
-                          setConnectingExternal(false);
-                        }
-                      }}
-                      disabled={connectingExternal}
-                      className="mt-1"
+                <Text className="text-white/50 font-mono text-xs mb-2">
+                  Send SOL to this address to fund your bets
+                </Text>
+                <Pressable onPress={handleCopyAddress}>
+                  <View
+                    className="flex-row items-center justify-between rounded-lg py-2.5 px-3"
+                    style={{ backgroundColor: Colors.dark200 }}
+                  >
+                    <Text
+                      className="font-mono text-xs flex-1 mr-2"
+                      style={{ color: Colors.white }}
+                      numberOfLines={1}
                     >
-                      <LinearGradient
-                        colors={[Colors.dark200, Colors.dark300]}
-                        className="flex-row items-center justify-center gap-2 rounded-lg py-2.5"
-                        style={{ borderWidth: 1, borderColor: Colors.dark300 }}
+                      {walletAddress}
+                    </Text>
+                    <View className="flex-row items-center gap-1">
+                      <Ionicons
+                        name={copied ? "checkmark-circle" : "copy-outline"}
+                        size={16}
+                        color={copied ? Colors.pump : Colors.whiteDim}
+                      />
+                      <Text
+                        className="font-mono text-xs font-bold"
+                        style={{ color: copied ? Colors.pump : Colors.whiteDim }}
                       >
-                        {connectingExternal ? (
-                          <ActivityIndicator size="small" color={Colors.pump} />
-                        ) : (
-                          <>
-                            <Ionicons name="wallet-outline" size={16} color={Colors.pump} />
-                            <Text className="text-white font-mono text-sm font-bold">
-                              Connect External Wallet
-                            </Text>
-                          </>
-                        )}
-                      </LinearGradient>
-                    </Pressable>
-                  )
-                )}
+                        {copied ? "Copied!" : "Copy"}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
               </GlowCard>
             </View>
           </AnimatedEntry>
