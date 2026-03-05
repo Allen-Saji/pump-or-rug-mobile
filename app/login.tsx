@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View, Text, Pressable, ActivityIndicator, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -13,9 +13,12 @@ type LoginProvider = AuthProvider;
 export default function LoginScreen() {
   const { login, oauthLoading, authenticated } = useAuth();
   const [activeProvider, setActiveProvider] = useState<LoginProvider | null>(null);
+  const navigated = useRef(false);
 
+  // Single navigation point: when authenticated becomes true, go home
   useEffect(() => {
-    if (authenticated) {
+    if (authenticated && !navigated.current) {
+      navigated.current = true;
       router.replace("/");
     }
   }, [authenticated]);
@@ -26,11 +29,7 @@ export default function LoginScreen() {
     setActiveProvider(provider);
     try {
       await login(provider);
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace("/");
-      }
+      // Navigation handled by useEffect above when authenticated changes
     } catch (e) {
       console.error("OAuth login failed:", e);
     } finally {

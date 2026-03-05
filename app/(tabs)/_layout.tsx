@@ -7,7 +7,12 @@ import { useAuth } from "@/lib/auth";
 export default function TabLayout() {
   const { authenticated, isReady } = useAuth();
 
-  if (isReady && !authenticated) {
+  // Show nothing while Privy initializes to prevent flash
+  if (!isReady) {
+    return <View style={{ flex: 1, backgroundColor: Colors.dark }} />;
+  }
+
+  if (!authenticated) {
     return <Redirect href="/login" />;
   }
 

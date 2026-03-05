@@ -21,7 +21,10 @@ export default function RootLayout() {
               contentStyle: { backgroundColor: "#0A0A0A" },
               animation: "slide_from_right",
             }}
-          />
+          >
+            <Stack.Screen name="login" options={{ animation: "fade" }} />
+            <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+          </Stack>
           <ToastOverlay />
         </View>
       </WalletProvider>
