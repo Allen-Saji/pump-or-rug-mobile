@@ -3,6 +3,7 @@ import { roundRepo } from "../repositories/round.repo";
 import { tokenService } from "./token.service";
 import { priceService } from "./price.service";
 import { betRepo } from "../repositories/bet.repo";
+import { tokenCacheRepo } from "../repositories/token-cache.repo";
 import { userRepo } from "../repositories/user.repo";
 import {
   ROUND_DURATION_MS,
@@ -40,7 +41,7 @@ export const roundService = {
     }
 
     // Select tokens
-    const candidates = tokenService.selectTokensForRound();
+    const candidates = await tokenService.selectTokensForRound();
     if (candidates.length < 2) {
       console.warn(`[round] Only ${candidates.length} eligible tokens, cancelling`);
       return null;
@@ -401,6 +402,8 @@ export const roundService = {
 };
 
 function mapTokenRow(row: any): Token {
+  // Enrich with cached data (volume, creation time)
+  const cached = tokenCacheRepo.getByMint(row.mint);
   return {
     id: row.id,
     mint: row.mint,
@@ -414,6 +417,8 @@ function mapTokenRow(row: any): Token {
     liquidity: row.liquidity ?? undefined,
     marketCap: row.marketCap ?? undefined,
     result: row.result ?? undefined,
+    volume24h: cached?.volume24h ?? undefined,
+    createdAt: cached?.createdTimestamp ?? undefined,
   };
 }
 

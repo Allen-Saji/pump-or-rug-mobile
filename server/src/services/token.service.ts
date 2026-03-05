@@ -90,9 +90,29 @@ export const tokenService = {
       .sort((a, b) => b.activityScore - a.activityScore);
   },
 
-  selectTokensForRound(): CandidateToken[] {
+  async selectTokensForRound(): Promise<CandidateToken[]> {
     const pumpTokens = this.getEligibleTokens("pump.fun");
-    return weightedRandomPick(pumpTokens, TOKENS_PER_ROUND, TOP_N_CANDIDATES);
+    const candidates = pumpTokens.slice(0, TOP_N_CANDIDATES);
+
+    // Verify each candidate has live price data on pump.fun API
+    // This ensures settlement will get a real close price (not cached = open price)
+    const verified: CandidateToken[] = [];
+    for (const token of candidates) {
+      if (verified.length >= TOKENS_PER_ROUND) break;
+      const hasLiveData = await verifyPumpFunLive(token.mint);
+      if (hasLiveData) {
+        verified.push(token);
+        console.log(`[token] Verified: ${token.ticker} (${token.mint.slice(0, 8)}...)`);
+      } else {
+        console.log(`[token] Skipped: ${token.ticker} — no live price data`);
+      }
+    }
+
+    if (verified.length < TOKENS_PER_ROUND) {
+      console.warn(`[token] Only ${verified.length}/${TOKENS_PER_ROUND} tokens passed live check`);
+    }
+
+    return verified;
   },
 };
 
@@ -170,6 +190,25 @@ function mapBagsToCache(pool: BagsPool, now: number): TokenCacheInsert {
     fetchedAt: now,
     activityScore,
   };
+}
+
+/** Check if pump.fun API returns live data for a token */
+async function verifyPumpFunLive(mint: string): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://frontend-api-v3.pump.fun/coins/${mint}`,
+      {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(5_000),
+      }
+    );
+    if (!res.ok) return false;
+    const coin = await res.json();
+    // Must have valid reserves to compute price
+    return coin.virtual_token_reserves > 0 && coin.virtual_sol_reserves > 0;
+  } catch {
+    return false;
+  }
 }
 
 /** Rewrite IPFS gateway URLs to Pinata's reliable gateway */

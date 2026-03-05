@@ -5,8 +5,16 @@ import { reconciliationService } from "../services/reconciliation.service";
 
 let jobs: Cron[] = [];
 
-export function startScheduler() {
+export async function startScheduler() {
   console.log("[cron] Starting scheduler...");
+
+  // Settle any rounds missed while server was down
+  try {
+    const count = await roundService.settleUnsettledRounds();
+    if (count > 0) console.log(`[cron] Startup: settled ${count} missed rounds`);
+  } catch (err) {
+    console.error("[cron] Startup settlement failed:", err);
+  }
 
   // Round generation — every 15 min at :00, :15, :30, :45
   // Refreshes token cache first, then picks tokens for the new round
