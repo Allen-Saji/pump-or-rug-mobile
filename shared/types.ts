@@ -21,6 +21,8 @@ export interface Token {
   result?: BetResult;
   pumpPool?: number;
   rugPool?: number;
+  volume24h?: number;
+  createdAt?: number;
 }
 
 export interface Round {

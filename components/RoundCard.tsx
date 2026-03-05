@@ -13,13 +13,15 @@ import { GlowCard } from "./GlowCard";
 import { AnimatedEntry } from "./AnimatedEntry";
 import { CountdownTimer } from "./CountdownTimer";
 import { TokenSlot } from "./TokenSlot";
-import type { Round } from "@/lib/types";
+import type { Bet, Round } from "@/lib/types";
 
 interface RoundCardProps {
   round: Round;
-  onBet: (tokenId: string, side: "pump" | "rug") => void;
+  onTokenSelect: (tokenId: string) => void;
+  selectedTokenId?: string | null;
   index?: number;
   betsDisabled?: boolean;
+  userBets?: Bet[];
 }
 
 const statusLabels: Record<string, { label: string; color: string }> = {
@@ -57,65 +59,75 @@ function PulsingDot({ color }: { color: string }) {
   );
 }
 
-export function RoundCard({ round, onBet, index = 0, betsDisabled }: RoundCardProps) {
+export function RoundCard({ round, onTokenSelect, selectedTokenId, index = 0, betsDisabled, userBets = [] }: RoundCardProps) {
   const router = useRouter();
   const status = statusLabels[round.status];
   const isOpen = round.status === "open";
+  const hasTwoTokens = round.tokens.length === 2;
 
   return (
     <AnimatedEntry index={index}>
-      <Pressable onPress={() => router.push(`/round/${round.id}`)}>
-        <GlowCard
-          borderColor={isOpen ? Colors.pump + "60" : Colors.dark300}
-          className="p-4 mb-4"
-        >
-          {/* Header */}
-          <View className="flex-row items-center justify-between mb-3">
-            <View className="flex-row items-center gap-2">
-              <Text className="text-white font-bold font-mono text-lg">
-                Round #{round.roundNumber}
-              </Text>
-              <View className="flex-row items-center gap-1.5 rounded-full px-2 py-0.5"
-                style={{ backgroundColor: status.color + "15" }}
+      <GlowCard
+        borderColor={isOpen ? Colors.pump + "60" : Colors.dark300}
+        className="p-4 mb-4"
+      >
+        {/* Header */}
+        <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center gap-2">
+            <Text className="text-white font-bold font-mono text-lg">
+              Round #{round.roundNumber}
+            </Text>
+            <View className="flex-row items-center gap-1.5 rounded-full px-2 py-0.5"
+              style={{ backgroundColor: status.color + "15" }}
+            >
+              {isOpen && <PulsingDot color={status.color} />}
+              <Text
+                className="text-xs font-bold font-mono"
+                style={{ color: status.color }}
               >
-                {isOpen && <PulsingDot color={status.color} />}
-                <Text
-                  className="text-xs font-bold font-mono"
-                  style={{ color: status.color }}
-                >
-                  {status.label}
-                </Text>
-              </View>
+                {status.label}
+              </Text>
             </View>
-
-            {isOpen && (
-              <CountdownTimer targetTime={round.closesAt} label="Closes in" />
-            )}
           </View>
 
-          {/* Pool info */}
-          <View className="flex-row gap-4 mb-3">
-            <Text className="text-white/50 text-xs font-mono">
-              Pool: {round.totalPool.toFixed(1)} SOL
-            </Text>
-            <Text className="text-white/50 text-xs font-mono">
-              Bets: {round.totalBets}
-            </Text>
-          </View>
+          {isOpen && (
+            <CountdownTimer targetTime={round.closesAt} label="Closes in" />
+          )}
+        </View>
 
-          {/* Token slots */}
-          {round.tokens.map((token, i) => (
-            <TokenSlot
-              key={token.id}
-              token={token}
-              isOpen={isOpen}
-              onPump={() => onBet(token.id, "pump")}
-              onRug={() => onBet(token.id, "rug")}
-              disabled={betsDisabled}
-            />
+        {/* Pool info */}
+        <View className="flex-row gap-4 mb-3">
+          <Text className="text-white/50 text-xs font-mono">
+            Pool: {round.totalPool.toFixed(1)} SOL
+          </Text>
+          <Text className="text-white/50 text-xs font-mono">
+            Bets: {round.totalBets}
+          </Text>
+        </View>
+
+        {/* Tap hint */}
+        {isOpen && (
+          <Text className="font-mono text-[10px] mb-2" style={{ color: Colors.whiteDim }}>
+            Tap a token to see details
+          </Text>
+        )}
+
+        {/* Token slots */}
+        <View className={hasTwoTokens ? "flex-row items-stretch gap-2" : ""}>
+          {round.tokens.map((token) => (
+            <View key={token.id} className={hasTwoTokens ? "flex-1" : "mb-2"}>
+              <TokenSlot
+                token={token}
+                isOpen={isOpen}
+                onPress={() => onTokenSelect(token.id)}
+                selected={selectedTokenId === token.id}
+                disabled={betsDisabled}
+                userBet={userBets.find((b) => b.tokenId === token.id)}
+              />
+            </View>
           ))}
-        </GlowCard>
-      </Pressable>
+        </View>
+      </GlowCard>
     </AnimatedEntry>
   );
 }

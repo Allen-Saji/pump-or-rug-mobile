@@ -10,11 +10,44 @@ import { useStore } from "@/lib/store";
 import { GlowCard } from "@/components/GlowCard";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
 import { TokenSlot } from "@/components/TokenSlot";
+import { TokenDetail } from "@/components/TokenDetail";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { BetSheet } from "@/components/BetSheet";
 import { SkeletonRoundDetail } from "@/components/SkeletonRoundDetail";
 import type { BetSide, Token } from "@/lib/types";
 import { useSolanaSignAndSend } from "@/lib/solana";
+
+function ResolveCountdown({ settlesAt }: { settlesAt: number }) {
+  const [seconds, setSeconds] = useState(() =>
+    Math.max(0, Math.ceil((settlesAt - Date.now()) / 1000))
+  );
+
+  useEffect(() => {
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((settlesAt - Date.now()) / 1000));
+      setSeconds(remaining);
+    };
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [settlesAt]);
+
+  if (seconds <= 0) {
+    return (
+      <Text className="font-mono text-[10px]" style={{ color: Colors.gold }}>
+        Resolving...
+      </Text>
+    );
+  }
+
+  return (
+    <View className="flex-row items-center gap-1">
+      <Ionicons name="time-outline" size={10} color={Colors.gold} />
+      <Text className="font-mono text-[10px]" style={{ color: Colors.gold }}>
+        {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
+      </Text>
+    </View>
+  );
+}
 
 export default function RoundDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,6 +56,7 @@ export default function RoundDetailScreen() {
   const signAndSend = useSolanaSignAndSend();
   const [betToken, setBetToken] = useState<Token | null>(null);
   const [betSide, setBetSide] = useState<BetSide | null>(null);
+  const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -31,21 +65,36 @@ export default function RoundDetailScreen() {
     }
   }, [id]);
 
-  const handleBet = (tokenId: string, side: BetSide) => {
-    const token = currentRound?.tokens.find((t) => t.id === tokenId);
-    if (token) {
-      setBetToken(token);
-      setBetSide(side);
-    }
+  // Auto-refresh after settlement
+  useEffect(() => {
+    if (!currentRound || currentRound.status === "settled") return;
+    const settlesAt = currentRound.closesAt + 65_000;
+    const ms = settlesAt - Date.now();
+    if (ms <= 0) return;
+    const timer = setTimeout(() => {
+      loadRound(currentRound.id);
+      loadUserBets(currentRound.id);
+    }, ms);
+    return () => clearTimeout(timer);
+  }, [currentRound?.id, currentRound?.status]);
+
+  const handleTokenSelect = (tokenId: string) => {
+    setSelectedTokenId((prev) => (prev === tokenId ? null : tokenId));
+  };
+
+  const handleBet = (token: Token, side: BetSide) => {
+    setBetToken(token);
+    setBetSide(side);
   };
 
   const handleConfirmBet = useCallback(
     async (amount: number) => {
       if (currentRound && betToken && betSide) {
         await placeBet(currentRound.id, betToken.id, betSide, amount, signAndSend);
+        loadUserBets(currentRound.id);
       }
     },
-    [currentRound, betToken, betSide, placeBet, signAndSend]
+    [currentRound, betToken, betSide, placeBet, signAndSend, loadUserBets]
   );
 
   if (!currentRound) {
@@ -54,7 +103,6 @@ export default function RoundDetailScreen() {
         className="flex-1"
         style={{ backgroundColor: Colors.dark }}
       >
-        {/* Header skeleton */}
         <View
           className="flex-row items-center px-4 py-3 gap-3"
           style={{ backgroundColor: Colors.dark }}
@@ -81,6 +129,10 @@ export default function RoundDetailScreen() {
   const totalStaked = userBets.reduce((s, b) => s + b.amount, 0);
   const totalPayout = userBets.reduce((s, b) => s + (b.payout ?? 0), 0);
   const pnl = totalPayout - totalStaked;
+
+  const selectedToken = selectedTokenId
+    ? currentRound.tokens.find((t) => t.id === selectedTokenId) ?? null
+    : null;
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.dark }}>
@@ -149,23 +201,38 @@ export default function RoundDetailScreen() {
         {/* Tokens */}
         <AnimatedEntry index={1}>
           <Text className="text-white/40 font-mono text-xs mb-2 uppercase">
-            Tokens
+            Tap a token to view details
           </Text>
         </AnimatedEntry>
-        {currentRound.tokens.map((token, i) => (
-          <AnimatedEntry key={token.id} index={i + 2}>
-            <TokenSlot
-              token={token}
-              isOpen={isOpen}
-              onPump={() => handleBet(token.id, "pump")}
-              onRug={() => handleBet(token.id, "rug")}
-            />
-          </AnimatedEntry>
-        ))}
+        <AnimatedEntry index={2}>
+          <View className={currentRound.tokens.length === 2 ? "flex-row items-stretch gap-2" : ""}>
+            {currentRound.tokens.map((token) => (
+              <View key={token.id} className={currentRound.tokens.length === 2 ? "flex-1" : "mb-2"}>
+                <TokenSlot
+                  token={token}
+                  isOpen={isOpen}
+                  onPress={() => handleTokenSelect(token.id)}
+                  selected={selectedTokenId === token.id}
+                  userBet={userBets.find((b) => b.tokenId === token.id)}
+                />
+              </View>
+            ))}
+          </View>
+        </AnimatedEntry>
 
-        {/* Token details */}
+        {/* Token detail panel */}
+        {selectedToken && (
+          <TokenDetail
+            token={selectedToken}
+            isOpen={isOpen}
+            onBet={(side) => handleBet(selectedToken, side)}
+            userBet={userBets.find((b) => b.tokenId === selectedToken.id)}
+          />
+        )}
+
+        {/* Price details for all tokens */}
         <AnimatedEntry index={5}>
-          <Text className="text-white/40 font-mono text-xs mb-2 mt-2 uppercase">
+          <Text className="text-white/40 font-mono text-xs mb-2 mt-4 uppercase">
             Price Details
           </Text>
         </AnimatedEntry>
@@ -242,6 +309,9 @@ export default function RoundDetailScreen() {
                     </Text>
                   </View>
                   <View className="items-end">
+                    {!bet.result && currentRound && (
+                      <ResolveCountdown settlesAt={currentRound.closesAt + 65_000} />
+                    )}
                     {bet.result && (
                       <Text
                         className="font-mono font-bold text-sm"

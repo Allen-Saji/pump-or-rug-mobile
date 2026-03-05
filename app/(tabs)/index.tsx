@@ -14,14 +14,15 @@ import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { useWallet } from "@/lib/wallet";
 import { RoundCard } from "@/components/RoundCard";
+import { TokenDetail } from "@/components/TokenDetail";
 import { BetSheet } from "@/components/BetSheet";
 import { AnimatedEntry } from "@/components/AnimatedEntry";
 import { SkeletonRoundCard } from "@/components/SkeletonRoundCard";
-import type { BetSide, Token } from "@/lib/types";
+import type { Bet, BetSide, Token } from "@/lib/types";
 import { useSolanaSignAndSend } from "@/lib/solana";
 
 export default function HomeScreen() {
-  const { rounds, loadRounds, placeBet, loading } = useStore();
+  const { rounds, loadRounds, placeBet, loading, userBets, loadUserBets } = useStore();
   const signAndSend = useSolanaSignAndSend();
   const { authenticated, truncatedAddress } = useAuth();
   const { solBalance, refreshBalance } = useWallet();
@@ -30,47 +31,63 @@ export default function HomeScreen() {
   const [betSide, setBetSide] = useState<BetSide | null>(null);
   const [betRoundId, setBetRoundId] = useState<string | null>(null);
 
+  // Track which token is expanded for detail view
+  const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
+
   useEffect(() => {
     loadRounds();
-  }, []);
+    if (authenticated) loadUserBets();
+  }, [authenticated]);
 
-  // Auto-refresh when the open round expires
+  // Auto-refresh when the open round expires + when settlement completes
   useEffect(() => {
     const openRound = rounds.find((r) => r.status === "open");
     if (!openRound) return;
 
-    const msUntilClose = openRound.closesAt - Date.now();
+    const now = Date.now();
+    const msUntilClose = openRound.closesAt - now;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
     if (msUntilClose <= 0) {
       loadRounds();
-      return;
+    } else {
+      // Refresh when round closes
+      timers.push(setTimeout(() => { loadRounds(); }, msUntilClose + 2000));
     }
 
-    const timer = setTimeout(() => {
-      loadRounds();
-    }, msUntilClose + 2000);
+    // Refresh after settlement (closesAt + 65s buffer)
+    const settlesAt = openRound.closesAt + 65_000;
+    const msUntilSettle = settlesAt - now;
+    if (msUntilSettle > 0) {
+      timers.push(setTimeout(() => {
+        loadRounds();
+        if (authenticated) loadUserBets();
+      }, msUntilSettle));
+    }
 
-    return () => clearTimeout(timer);
-  }, [rounds]);
+    return () => timers.forEach(clearTimeout);
+  }, [rounds, authenticated]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadRounds();
+    await Promise.all([loadRounds(), authenticated ? loadUserBets() : Promise.resolve()]);
     setRefreshing(false);
-  }, []);
+  }, [authenticated]);
 
-  const handleBet = (roundId: string, tokenId: string, side: BetSide) => {
-    const round = rounds.find((r) => r.id === roundId);
-    const token = round?.tokens.find((t) => t.id === tokenId);
-    if (token) {
-      setBetRoundId(roundId);
-      setBetToken(token);
-      setBetSide(side);
-    }
+  const handleTokenSelect = (tokenId: string) => {
+    setSelectedTokenId((prev) => (prev === tokenId ? null : tokenId));
+  };
+
+  const handleBet = (roundId: string, token: Token, side: BetSide) => {
+    setBetRoundId(roundId);
+    setBetToken(token);
+    setBetSide(side);
   };
 
   const handleConfirmBet = async (amount: number) => {
     if (betRoundId && betToken && betSide) {
       await placeBet(betRoundId, betToken.id, betSide, amount, signAndSend);
+      if (authenticated) loadUserBets();
     }
   };
 
@@ -82,6 +99,16 @@ export default function HomeScreen() {
 
   const openRound = rounds.find((r) => r.status === "open");
   const pastRounds = rounds.filter((r) => r.status !== "open");
+
+  // Find the selected token object from the current rounds
+  const selectedToken = (() => {
+    if (!selectedTokenId) return null;
+    for (const round of rounds) {
+      const token = round.tokens.find((t) => t.id === selectedTokenId);
+      if (token) return { token, round };
+    }
+    return null;
+  })();
 
   return (
     <SafeAreaView className="flex-1" edges={["top"]} style={{ backgroundColor: Colors.dark }}>
@@ -185,10 +212,23 @@ export default function HomeScreen() {
             </AnimatedEntry>
             <RoundCard
               round={openRound}
-              onBet={(tokenId, side) => handleBet(openRound.id, tokenId, side)}
+              onTokenSelect={handleTokenSelect}
+              selectedTokenId={selectedTokenId}
               index={0}
               betsDisabled={!authenticated}
+              userBets={userBets.filter((b) => b.roundId === openRound.id)}
             />
+
+            {/* Token detail panel — below the round card */}
+            {selectedToken && selectedToken.round.id === openRound.id && (
+              <TokenDetail
+                token={selectedToken.token}
+                isOpen={openRound.status === "open"}
+                onBet={(side) => handleBet(openRound.id, selectedToken.token, side)}
+                disabled={!authenticated}
+                userBet={userBets.find((b) => b.tokenId === selectedToken.token.id)}
+              />
+            )}
           </View>
         )}
 
@@ -211,13 +251,25 @@ export default function HomeScreen() {
               </View>
             </AnimatedEntry>
             {pastRounds.map((round, i) => (
-              <RoundCard
-                key={round.id}
-                round={round}
-                onBet={(tokenId, side) => handleBet(round.id, tokenId, side)}
-                index={i + 2}
-                betsDisabled={!authenticated}
-              />
+              <View key={round.id}>
+                <RoundCard
+                  round={round}
+                  onTokenSelect={handleTokenSelect}
+                  selectedTokenId={selectedTokenId}
+                  index={i + 2}
+                  betsDisabled={!authenticated}
+                  userBets={userBets.filter((b) => b.roundId === round.id)}
+                />
+                {selectedToken && selectedToken.round.id === round.id && (
+                  <TokenDetail
+                    token={selectedToken.token}
+                    isOpen={round.status === "open"}
+                    onBet={(side) => handleBet(round.id, selectedToken.token, side)}
+                    disabled={!authenticated}
+                    userBet={userBets.find((b) => b.tokenId === selectedToken.token.id)}
+                  />
+                )}
+              </View>
             ))}
           </View>
         )}
