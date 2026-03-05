@@ -15,19 +15,19 @@ const steps = [
     num: "01",
     icon: <Coin size={32} weight="duotone" className="text-accent" />,
     title: "Tokens Drop",
-    desc: "Every hour, four fresh tokens straight from pump.fun. You don't know which until the round opens.",
+    desc: "Every 15 minutes, two fresh tokens straight from pump.fun. You don't know which until the round opens.",
   },
   {
     num: "02",
     icon: <Crosshair size={32} weight="duotone" className="text-pump" />,
     title: "Lock Your Call",
-    desc: "60 minutes to call PUMP or RUG on each token and choose your stake: 0.01 to 1 SOL per token. Your picks are hidden until the window closes. No herding.",
+    desc: "15 minutes to call PUMP or RUG on each token and choose your stake: 0.01 to 1 SOL per token. Your picks are hidden until the window closes. No herding.",
   },
   {
     num: "03",
     icon: <Scales size={32} weight="duotone" className="text-warn" />,
     title: "Engine Settles",
-    desc: "After the hour closes, the engine checks each token's price. The math decides the outcome.",
+    desc: "One minute after close, the engine checks each token's price. Any move up = PUMP. Any move down = RUG. No dead zone.",
   },
 ];
 

@@ -19,9 +19,9 @@ const fadeUp = {
 const timelineSteps = [
   { label: "Token Selected", sub: "(hidden)", color: "var(--muted)" },
   { label: "Round Opens", sub: "(revealed)", color: "var(--accent)" },
-  { label: "60m Prediction", sub: "Window", color: "var(--pump)" },
+  { label: "15m Prediction", sub: "Window", color: "var(--pump)" },
   { label: "Picks Lock", sub: "", color: "var(--warn)" },
-  { label: "Settlement", sub: "at :05", color: "var(--rug)" },
+  { label: "Settlement", sub: "at +1min", color: "var(--rug)" },
   { label: "Result", sub: "", color: "var(--pump)" },
 ];
 
@@ -30,21 +30,21 @@ const faqs = [
     icon: <Eye size={28} weight="duotone" className="text-accent" />,
     question: "When do you predict?",
     answer:
-      "Token is revealed when the round opens. You see it, research it, then make your PUMP or RUG call within 60 minutes. Your pick stays hidden from everyone else until the window closes.",
+      "Token is revealed when the round opens. You see it, research it, then make your PUMP or RUG call within 15 minutes. Your pick stays hidden from everyone else until the window closes.",
     accent: "accent",
   },
   {
     icon: <Timer size={28} weight="duotone" className="text-warn" />,
-    question: "Why hourly rounds?",
+    question: "Why 15-minute rounds?",
     answer:
-      "Fast enough to keep you hooked. Long enough for real price action. Every hour is a fresh arena — new tokens, new calls. You read the chart, make your play, and results drop at :05 the next hour. 24 rounds a day. No waiting around.",
+      "Fast enough to keep you hooked. Short enough that every price tick matters. Every 15 minutes is a fresh arena — new tokens, new calls. You read the chart, make your play, and results drop 1 minute after close. 96 rounds a day. No waiting around.",
     accent: "warn",
   },
   {
     icon: <Shuffle size={28} weight="duotone" className="text-pump" />,
     question: "How are tokens picked?",
     answer:
-      "Tokens are pulled from pump.fun's live feed, filtered by age and liquidity, scored by activity, then 4 are picked via weighted random draw. They're not revealed until the round opens. No one can front-run or pre-position.",
+      "Tokens are pulled from pump.fun's live feed, filtered by age and liquidity, scored by activity, then 2 are picked via weighted random draw. They're not revealed until the round opens. No one can front-run or pre-position.",
     accent: "pump",
   },
 ];

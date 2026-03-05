@@ -6,8 +6,6 @@ import { betRepo } from "../repositories/bet.repo";
 import { userRepo } from "../repositories/user.repo";
 import {
   ROUND_DURATION_MS,
-  PUMP_THRESHOLD,
-  RUG_THRESHOLD,
   POINTS_WIN,
   POINTS_LOSS,
   POINTS_STREAK_BONUS,
@@ -28,12 +26,12 @@ import {
 
 export const roundService = {
   async generateRound(): Promise<Round | null> {
-    // Idempotency: compute round number from hour timestamp
+    // Idempotency: compute round number from 15-min slot timestamp
     const now = Date.now();
-    const hourTimestamp = Math.floor(now / ROUND_DURATION_MS) * ROUND_DURATION_MS;
-    const roundNumber = Math.floor(hourTimestamp / ROUND_DURATION_MS);
+    const slotTimestamp = Math.floor(now / ROUND_DURATION_MS) * ROUND_DURATION_MS;
+    const roundNumber = Math.floor(slotTimestamp / ROUND_DURATION_MS);
 
-    // Check if round already exists for this hour
+    // Check if round already exists for this slot
     const existing = roundRepo.getByRoundNumber(roundNumber);
     if (existing) {
       console.log(`[round] Round ${roundNumber} already exists, skipping`);
@@ -49,8 +47,8 @@ export const roundService = {
     }
 
     const roundId = ulid();
-    const opensAt = hourTimestamp;
-    const closesAt = hourTimestamp + ROUND_DURATION_MS;
+    const opensAt = slotTimestamp;
+    const closesAt = slotTimestamp + ROUND_DURATION_MS;
 
     const tokenRows = candidates.map((c) => ({
       id: ulid(),
@@ -89,8 +87,8 @@ export const roundService = {
     // Create on-chain rounds (one per token)
     const openTsSec = Math.floor(opensAt / 1000);
     const closeTsSec = Math.floor(closesAt / 1000);
-    // settle_ts must be after close_ts; use close + 5min (SETTLEMENT_DELAY_MS)
-    const settleTsSec = closeTsSec + 300;
+    // settle_ts must be after close_ts; use close + 1min (SETTLEMENT_DELAY_MS)
+    const settleTsSec = closeTsSec + 60;
 
     for (let i = 0; i < tokenRows.length; i++) {
       const onchainId = toOnchainRoundId(roundNumber, i);
@@ -183,12 +181,12 @@ export const roundService = {
         ((closePrice - token.priceAtOpen) / token.priceAtOpen) * 100;
 
       let result: BetResult;
-      if (changePercent >= PUMP_THRESHOLD) {
+      if (changePercent > 0) {
         result = "pump";
-      } else if (changePercent <= RUG_THRESHOLD) {
+      } else if (changePercent < 0) {
         result = "rug";
       } else {
-        result = "no_score";
+        result = "no_score"; // exactly 0% — near-impossible, refund
       }
 
       roundRepo.updateTokenResult(token.id, closePrice, changePercent, result);

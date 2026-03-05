@@ -14,11 +14,11 @@ const fadeUp = {
 const faqs = [
   {
     q: "What is Pump or Rug?",
-    a: "A prediction game. Every hour, four tokens drop straight from pump.fun. You have a full 60-minute window to call PUMP or RUG on each. After the hour closes, the price is checked and you find out if you were right.",
+    a: "A prediction game. Every 15 minutes, two tokens drop straight from pump.fun. You call PUMP or RUG on each. After the round closes, the price is checked and you find out if you were right.",
   },
   {
     q: "What does PUMP mean? What about RUG?",
-    a: "PUMP means you think the token's price will rise at least 10% by the end of the hour. RUG means you think it'll drop 10%+. These come from crypto slang: \"pump\" = price goes up, \"rug pull\" = creators dump and run.",
+    a: "PUMP means you think the token's price will go up by the end of the round. RUG means you think it'll go down. Any movement counts — no threshold. These come from crypto slang: \"pump\" = price goes up, \"rug pull\" = creators dump and run.",
   },
   {
     q: "How is the price checked?",
@@ -38,15 +38,15 @@ const faqs = [
   },
   {
     q: "What is NO SCORE?",
-    a: "When the price doesn't move enough to qualify as a PUMP or a RUG. The token just kind of sat there. Nobody scores, and stakes are refunded.",
+    a: "When the price doesn't move at all — exactly 0% change. This is near-impossible with real trading activity. If it somehow happens, nobody scores and stakes are refunded.",
   },
   {
     q: "What do P0, P1, L0, L1 mean?",
-    a: "P0 = starting price (cached when round opens). P1 = ending price (fetched from Birdeye at settlement). If P1/P0 shows ≥10% move, the outcome is decided.",
+    a: "P0 = starting price (cached when round opens). P1 = ending price (fetched from Birdeye at settlement). If P1 > P0, it's PUMP. If P1 < P0, it's RUG. Simple as that.",
   },
   {
     q: "How does scoring work?",
-    a: "Points track reputation and are independent of stake. Correct call = +5 points. Wrong call = -3 points. Perfect round (all correct) = 2x multiplier. Correctly calling a heavy rug (>25% drop) = +3 rug sniper bonus. Win streaks add +2 per consecutive win, stacking. Break-even accuracy is 37.5%.",
+    a: "Points track reputation and are independent of stake. Correct call = +5 points. Wrong call = -3 points. Perfect round (both correct) = 1.5x multiplier. Correctly calling a heavy rug (>25% drop) = +3 rug sniper bonus. Win streaks add +2 per consecutive win, stacking. Break-even accuracy is 37.5%.",
   },
   {
     q: "How do payouts work?",
@@ -61,12 +61,12 @@ const faqs = [
     a: "Win streaks: consecutive correct picks earn +2 bonus points per streak level. The bonus stacks — a 5th consecutive win earns +10 bonus on top of the base +5. One wrong pick resets it. Daily streaks: play at least once per day to keep your streak alive. Miss a day and it resets to zero.",
   },
   {
-    q: "Why 1-hour rounds?",
-    a: "Long enough for real price action to play out. Short enough to keep the game moving — 24 rounds per day, new tokens every hour. You make your call, lock it in, and results drop fast.",
+    q: "Why 15-minute rounds?",
+    a: "Short enough to keep the action constant. Long enough for real price movement on fresh pump.fun tokens — 96 rounds per day, new tokens every 15 minutes. You make your call, lock it in, and results drop 1 minute later.",
   },
   {
     q: "Can someone manipulate the outcome?",
-    a: "We've made it very expensive to try. Liquidity floors, hidden token selection, 24h cooldown on repeats, and independent price oracle (Birdeye). Max round profit is ~4 SOL per round — not worth the effort.",
+    a: "We've made it very expensive to try. Liquidity floors, hidden token selection, 4h cooldown on repeats, and independent price oracle (Birdeye). Max round profit is ~2 SOL per round — not worth the effort.",
   },
   {
     q: "What does \"sell-blocked\" mean?",

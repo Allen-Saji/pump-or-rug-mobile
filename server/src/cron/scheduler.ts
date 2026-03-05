@@ -8,20 +8,15 @@ let jobs: Cron[] = [];
 export function startScheduler() {
   console.log("[cron] Starting scheduler...");
 
-  // Round generation — at :00 of every hour
+  // Round generation — every 15 min at :00, :15, :30, :45
   // Refreshes token cache first, then picks tokens for the new round
   jobs.push(
-    new Cron("0 * * * *", async () => {
+    new Cron("0,15,30,45 * * * *", async () => {
       console.log("[cron] Refreshing token cache before round generation...");
       try {
         await tokenService.refreshCache("pump.fun");
       } catch (err) {
         console.error("[cron] pump.fun refresh failed:", err);
-      }
-      try {
-        await tokenService.refreshCache("bags.fm");
-      } catch (err) {
-        console.error("[cron] bags.fm refresh failed:", err);
       }
 
       console.log("[cron] Generating new round...");
@@ -33,9 +28,9 @@ export function startScheduler() {
     })
   );
 
-  // Round settlement — at :05 of every hour
+  // Round settlement — 1 min after each round close
   jobs.push(
-    new Cron("5 * * * *", async () => {
+    new Cron("1,16,31,46 * * * *", async () => {
       console.log("[cron] Settling rounds...");
       try {
         const count = await roundService.settleUnsettledRounds();
@@ -46,9 +41,9 @@ export function startScheduler() {
     })
   );
 
-  // Stale bet cleanup — every 10 minutes
+  // Stale bet cleanup — every 5 minutes
   jobs.push(
-    new Cron("*/10 * * * *", async () => {
+    new Cron("*/5 * * * *", async () => {
       try {
         const cleaned = reconciliationService.cleanStaleBets();
         if (cleaned > 0) console.log(`[cron] Cleaned ${cleaned} stale bets`);
@@ -58,9 +53,9 @@ export function startScheduler() {
     })
   );
 
-  // Fee sweep — at :30 of every hour (after settlement + claims)
+  // Fee sweep — 4 min after each round close (after settlement + claims)
   jobs.push(
-    new Cron("30 * * * *", async () => {
+    new Cron("4,19,34,49 * * * *", async () => {
       try {
         await reconciliationService.sweepFees();
       } catch (err) {

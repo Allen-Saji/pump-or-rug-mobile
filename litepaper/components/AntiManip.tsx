@@ -19,8 +19,8 @@ const checks = [
     desc: "Minimum liquidity required to enter the round. No micro-cap tokens that can be moved with pocket change.",
   },
   {
-    title: "24h Cooldown",
-    desc: "No token repeats within 24 hours. Fresh tokens every round — no patterns to exploit.",
+    title: "4h Cooldown",
+    desc: "No token repeats within 4 hours. Fresh tokens every round — no patterns to exploit.",
   },
   {
     title: "Hidden Selection",

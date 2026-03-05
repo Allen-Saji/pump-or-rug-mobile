@@ -77,12 +77,12 @@ export function getBetPositionPda(
 }
 
 // ── Round ID mapping ─────────────────────────────────────────────
-// Each game round has 4 tokens; each token gets its own on-chain round
+// Each game round has 2 tokens; each token gets its own on-chain round
 export function toOnchainRoundId(
   roundNumber: number,
   tokenIndex: number
 ): BN {
-  return new BN(roundNumber * 4 + tokenIndex);
+  return new BN(roundNumber * 2 + tokenIndex);
 }
 
 // ── Exports ──────────────────────────────────────────────────────

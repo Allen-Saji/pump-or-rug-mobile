@@ -13,7 +13,7 @@ import {
   TOKEN_MIN_LIQUIDITY,
   TOKEN_MIN_VOLUME,
   TOKEN_COOLDOWN_MS,
-  TOKENS_PER_PLATFORM,
+  TOKENS_PER_ROUND,
   TOP_N_CANDIDATES,
   STALE_CACHE_THRESHOLD_MS,
 } from "../lib/config";
@@ -92,21 +92,7 @@ export const tokenService = {
 
   selectTokensForRound(): CandidateToken[] {
     const pumpTokens = this.getEligibleTokens("pump.fun");
-    const bagsTokens = this.getEligibleTokens("bags.fm");
-
-    const pumpPicks = weightedRandomPick(pumpTokens, TOKENS_PER_PLATFORM, TOP_N_CANDIDATES);
-    const bagsPicks = weightedRandomPick(bagsTokens, TOKENS_PER_PLATFORM, TOP_N_CANDIDATES);
-
-    // Fallback: if bags.fm has no eligible tokens, fill from pump.fun
-    if (bagsPicks.length < TOKENS_PER_PLATFORM) {
-      const remaining = TOKENS_PER_PLATFORM * 2 - pumpPicks.length - bagsPicks.length;
-      const extraPump = pumpTokens
-        .filter((t) => !pumpPicks.some((p) => p.mint === t.mint))
-        .slice(0, remaining);
-      return [...pumpPicks, ...bagsPicks, ...extraPump];
-    }
-
-    return [...pumpPicks, ...bagsPicks];
+    return weightedRandomPick(pumpTokens, TOKENS_PER_ROUND, TOP_N_CANDIDATES);
   },
 };
 
@@ -143,7 +129,7 @@ function mapPumpFunToCache(coin: PumpFunCoin, now: number): TokenCacheInsert {
   const liquidity = computePumpFunLiquidity(coin);
   // Activity score: recency of trades + reply engagement
   const recencyMs = now - coin.last_trade_timestamp;
-  const recencyScore = Math.max(0, 1 - recencyMs / (60 * 60 * 1000)); // 0-1, 1=just traded
+  const recencyScore = Math.max(0, 1 - recencyMs / (15 * 60 * 1000)); // 0-1, 1=just traded (15min window)
   const engagementScore = Math.min(coin.reply_count / 100, 1); // 0-1
   const activityScore = recencyScore * 0.7 + engagementScore * 0.3;
 

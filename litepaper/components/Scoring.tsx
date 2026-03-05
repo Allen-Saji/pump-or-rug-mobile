@@ -21,7 +21,7 @@ const points = [
   { val: "+5", label: "Correct pick", color: "text-pump" },
   { val: "-3", label: "Wrong pick", color: "text-rug" },
   { val: "0", label: "VOID / NS", color: "text-muted" },
-  { val: "2x", label: "Perfect round", color: "text-accent" },
+  { val: "1.5x", label: "Perfect round", color: "text-accent" },
   { val: "+3", label: "Rug sniper bonus", color: "text-warn" },
 ];
 

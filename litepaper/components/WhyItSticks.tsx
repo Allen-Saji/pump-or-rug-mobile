@@ -21,8 +21,8 @@ const fadeUp = {
 const features = [
   {
     icon: <Timer size={24} weight="duotone" className="text-accent" />,
-    title: "Hourly Rhythm",
-    desc: "New rounds every hour. Miss one? Another drops in 60 minutes.",
+    title: "15-Min Rhythm",
+    desc: "New rounds every 15 minutes. Miss one? Another drops before you finish your coffee.",
   },
   {
     icon: <Fire size={24} weight="duotone" className="text-rug" />,
@@ -47,7 +47,7 @@ const features = [
   {
     icon: <Lightning size={24} weight="duotone" className="text-warn" />,
     title: "30-Second Sessions",
-    desc: "Open. Pick. Close. Results drop at :05 the next hour.",
+    desc: "Open. Pick. Close. Results drop 1 minute after the round ends.",
   },
   {
     icon: <BellRinging size={24} weight="duotone" className="text-accent" />,

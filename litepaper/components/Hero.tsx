@@ -68,7 +68,7 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.7, ease }}
           className="mt-6 text-lg sm:text-xl text-muted max-w-2xl mx-auto"
         >
-          Every hour, four fresh tokens drop straight from pump.fun.
+          Every 15 minutes, two fresh tokens drop straight from pump.fun.
           Call PUMP or RUG. Transparent settlement. Real stakes.
         </motion.p>
 
@@ -95,9 +95,9 @@ export default function Hero() {
           className="mt-10 flex justify-center gap-3 sm:gap-4 flex-wrap"
         >
           {[
-            { value: "24", label: "rounds/day" },
+            { value: "96", label: "rounds/day" },
             { value: "0.01–1 SOL", label: "per pick" },
-            { value: "1h", label: "rounds" },
+            { value: "15min", label: "rounds" },
           ].map((stat, i) => (
             <motion.div
               key={i}

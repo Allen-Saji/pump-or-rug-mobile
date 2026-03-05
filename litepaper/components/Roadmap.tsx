@@ -16,7 +16,7 @@ const phases = [
     title: "Prediction Core",
     icon: <GameController size={28} weight="duotone" className="text-pump" />,
     items: [
-      "Hourly rounds (pump.fun)",
+      "15-min rounds (pump.fun)",
       "Birdeye settlement engine",
       "Leaderboard + streaks",
       "Mobile-first UI",

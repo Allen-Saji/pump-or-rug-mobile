@@ -30,7 +30,7 @@ const filters = [
   {
     icon: <CurrencyDollar size={20} weight="duotone" className="text-pump" />,
     label: "Liquidity",
-    threshold: "≥ $5,000",
+    threshold: "≥ $2,000",
     why: "Thin pools are trivially manipulable. Liquidity floor makes market-moving trades expensive enough to deter gaming.",
   },
   {
@@ -48,7 +48,7 @@ const filters = [
   {
     icon: <Hourglass size={20} weight="duotone" className="text-accent" />,
     label: "Cooldown",
-    threshold: "≥ 24 hours since last round",
+    threshold: "≥ 4 hours since last round",
     why: "Prevents the same token from appearing in back-to-back rounds. Keeps the game fresh and unpredictable.",
   },
 ];
@@ -93,7 +93,7 @@ export default function TokenSelection() {
             How Tokens Get <span className="text-pump">Selected</span>
           </h2>
           <p className="text-muted mt-3 max-w-lg mx-auto">
-            Every hour, the engine picks four tokens from pump.fun&apos;s live feed.
+            Every 15 minutes, the engine picks two tokens from pump.fun&apos;s live feed.
             One pipeline: filter, score, select.
           </p>
         </motion.div>
@@ -225,7 +225,7 @@ export default function TokenSelection() {
           </div>
 
           <p className="text-muted text-sm mt-4">
-            Survivors are ranked by activity score. The top 5 advance to final
+            Survivors are ranked by activity score. The top 10 advance to final
             selection.
           </p>
         </motion.div>
@@ -243,15 +243,15 @@ export default function TokenSelection() {
             </h3>
           </div>
           <p className="text-muted text-sm mb-4">
-            The top 5 candidates are assigned weights proportional to their
-            activity scores. A weighted random draw picks 4 winners — the
+            The top 10 candidates are assigned weights proportional to their
+            activity scores. A weighted random draw picks 2 winners — the
             highest scorers are most likely but not guaranteed, keeping every
             round unpredictable.
           </p>
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-pump/20 bg-surface/50">
             <span className="font-mono text-xs text-muted">Result:</span>
             <span className="font-mono text-sm text-pump font-bold">
-              4 tokens per round
+              2 tokens per round
             </span>
           </div>
         </motion.div>
