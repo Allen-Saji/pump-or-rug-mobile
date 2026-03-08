@@ -1,4 +1,8 @@
-# Pump or Rug
+<p align="center">
+  <img src="assets/pumpruglogo.png" alt="Pump or Rug" width="200" />
+</p>
+
+<h1 align="center">Pump or Rug</h1>
 
 A real-time prediction game built on Solana. Players bet whether newly launched pump.fun tokens will pump or rug within a 15-minute window. Every round features two live tokens with real price feeds, on-chain escrow for trustless payouts, and a competitive scoring system with streaks and leaderboards.
 
